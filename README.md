@@ -4,6 +4,8 @@ You can use the [editor on GitHub](https://github.com/888fff/bunkergames/edit/ma
 
 Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
 
+让我们开始第一篇博客吧 [戳这里](http://www.bunkergames.cn/first_test_blog.md)
+
 ### Markdown
 
 Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
