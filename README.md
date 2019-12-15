@@ -12,11 +12,11 @@
 
   I attended a GGJ2019 on the line.[2019-3-23]
 
-- 
+- to be continue.
 
 ### 生活感慨
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/888fff/bunkergames/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+Here needs to be filled...
 
 ### 喜爱的东西
 
