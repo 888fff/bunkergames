@@ -1,39 +1,26 @@
-## Welcome to GitHub Pages
+##  温伟航的游戏生活随笔
 
-You can use the [editor on GitHub](https://github.com/888fff/bunkergames/edit/master/README.md) to maintain and preview the content for your website in Markdown files.
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
 
-让我们开始第一篇博客吧 [戳这里](http://www.bunkergames.cn/first_test_blog)
+这里会记录一些学习的心得，一些生活的感慨，或者一些喜爱的东西。欢迎朋友们交流和点评 email:410146465@qq.com
 
-### Markdown
+让我们荡起双桨
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+### 学习心得
 
-```markdown
-Syntax highlighted code block
+- #### [Globe Game Jam 2019](https://www.bunkergames.cn/ggj2019)
 
-# Header 1
-## Header 2
-### Header 3
+  I attended a GGJ2019 on the line.[2019-3-23]
 
-- Bulleted
-- List
+- 
 
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
-```
-
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
-
-### Jekyll Themes
+### 生活感慨
 
 Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/888fff/bunkergames/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
 
-### Support or Contact
+### 喜爱的东西
 
-Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+- #### [剧本杀的思考](https://www.bunkergames.cn/jbs_thinking)
+
+  The way of my thinking about Broad Killing Game.[2019-3-4]
+
