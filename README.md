@@ -18,7 +18,9 @@ email:410146465@qq.com
 
 ### 生活感慨
 
-Here needs to be filled...
+- #### [总结2019，展望2020](https://www.bunkergames.cn/2019_end)
+
+  Summarize 2019 and look forward to 2020
 
 ### 喜爱的东西
 
@@ -26,3 +28,6 @@ Here needs to be filled...
 
   The way of my thinking about Broad Killing Game.[2019-3-4]
 
+### 我们的游戏
+
+- coming soon...
