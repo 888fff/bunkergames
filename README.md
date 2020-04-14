@@ -14,13 +14,13 @@ email:410146465@qq.com
 
   I attended a GGJ2019 on the line.[2019-3-23]
 
-- ##### to be continue...
+- #### [AR 论文架构思考](https://www.bunkergames.cn/paper_1)
 
-### 生活感慨
+  I'm going to write a paper about AR,this is my thinking process.[2020-4-14]
 
-- #### [总结2019，展望2020](https://www.bunkergames.cn/2019_end)
+- #### [开发地牢游戏中，攻击力随机数值设置感悟](atk_num_setting.md)
 
-  Summarize 2019 and look forward to 2020
+  based normal distribution to set the number and probability of attacking in roguelike game
 
 ### 喜爱的东西
 
@@ -31,3 +31,9 @@ email:410146465@qq.com
 ### 我们的游戏
 
 - coming soon...
+
+### 生活感慨
+
+- #### [总结2019，展望2020](https://www.bunkergames.cn/2019_end)
+
+  Summarize 2019 and look forward to 2020

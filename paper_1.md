@@ -1,5 +1,7 @@
 ## AR在提升惊悚游戏中的作用
 
+***`written by wenweihang`***
+
 - AR的简要概述
   - 识别型AR
   - 3D重建型
