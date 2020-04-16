@@ -24,9 +24,9 @@ v2f vert(appdata_t IN)
 fixed4 frag(v2f IN) : SV_Target
 {
 	float2 u = IN.vertex.xy;
-    if (u.x > 100) u.x = 0;
-    if (u.y > 100) u.x = 0;
-    return float4(u.x, u.x, u.x,1);
+	if (u.x > 100) u.x = 0;
+	if (u.y > 100) u.x = 0;
+	return float4(u.x, u.x, u.x,1);
 }
 ```
 
