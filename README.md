@@ -18,6 +18,10 @@ email:410146465@qq.com
 
   I'm going to write a paper about AR,this is my thinking process.[2020-4-14]
 
+- #### [AR 论文架构思考2](paper_2.md)
+
+  this is modified version [2020-4-19]
+
 - #### [开发地牢游戏中，攻击力随机数值设置感悟](atk_num_setting.md)
 
   based normal distribution to set the number and probability of attacking in roguelike game.[2020-4-14]
