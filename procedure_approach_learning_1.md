@@ -1,0 +1,319 @@
+# 程序化方法 1
+
+### 程序化纹理
+
+###### 显式方法和隐式方法
+
+原则上，显式和隐式方法可以用于生成相同类别的纹理模式或几何模型(几乎任何东西)，但在实践中，每种方法都有自己的方便或可行的模型类别。
+
+|           Explicit           |                          Implicit                          |
+| :--------------------------: | :--------------------------------------------------------: |
+|       polygons 多边形        |                     quadrics  二次曲面                     |
+| parametric curves 参数化曲线 | patterns of potential or force fields 势场或力场产生的图形 |
+|        patches  贴片         |            natural stone textures 自然岩石纹理             |
+|                              |                         clouds 云                          |
+|                              |                           fog 雾                           |
+
+###### 程序化方法的优势
+
+- 紧凑性，字节数大小
+- 没有固定的分辨率。大多数情况下无论分辨率多高，都有精确而详细的纹理。
+- 可以参数化，生成相关的一系列纹理
+
+###### 程序化方法的劣势
+
+- 过程纹理很难构建和调试
+- 很难能预测生成后的结果
+- 时间和空间的权衡，程序化比纹理采样要慢
+- 锯齿化和反锯齿带来的问题
+
+###### 贴图空间
+
+- 世界空间是其他空间的起点。It is the starting point for all other spaces.
+- 对象空间才是被着色的表面定义的那个 The object space is the one in which the surface being shaded was defined
+- 着色器空间
+
+###### 分层和合成
+
+将两个颜色进行混合	C = mix(C0, Cl, f);  这个应该是HLSL中的lerp函数
+
+如果两个颜色相乘，可以理解为一种颜色对另一种颜色的过滤。如果颜色C0表示滤镜对红光、绿光和蓝光的透明度，那么C0·C1表示通过滤镜看到的颜色C1。If color C0 represents the transparency of a filter to red, green, and blue light,then C0·C1 represents the color C1 as viewed through the filter.
+
+###### Steps, Clamps, and Conditionals
+
+**Step**函数可以替换一些条件语句，例如：
+
+```glsl
+if (u < 0.5)
+	Ci = color (1,1,0.5);
+else
+	Ci = color (0.5,0.3,1);
+//可以替换为:
+Ci = mix(color (1,1,0.5), color (0.5,0.3,1), step(0.5, u));
+```
+
+两个step函数可以被用来做一个矩形脉冲：
+
+```glsl
+#define PULSE(a,b,x) (step((a),(x)) - step((b),(x)))
+```
+
+<img src="img/procedure_approach_learning_1/image-20200424015902684.png" alt="image-20200424015902684" style="zoom:50%;" />
+
+**Clamp**函数可以这么用：
+
+min(x, b) ≡ clamp(x, x, b)
+
+max(x, a) ≡ clamp(x, a, x)
+
+clamp(x, a, b) ≡ min(max(x, a), b)
+
+它的图像是这样的
+
+<img src="img/procedure_approach_learning_1/image-20200424020240720.png" alt="image-20200424020240720" style="zoom:50%;" />
+
+**Abs**函数的图像是这样：
+
+<img src="img/procedure_approach_learning_1/image-20200424020459887.png" alt="image-20200424020459887" style="zoom:50%;" />
+
+上面的这些函数都是一些“硬”，那么下面来介绍一下软的函数**smoothstep**，我曾经有写介绍这个函数的一个[学习笔记](shader_learning_5.md)
+
+它的图像是这样：
+
+<img src="img/procedure_approach_learning_1/image-20200424023704023.png" alt="image-20200424023704023" style="zoom:50%;" />
+
+在许多程序化纹理都用**smoothstep**代替**step**，因为尖锐的过渡总不是很受欢迎，而且还有锯齿，而且在动画的时候也会防止突然的运动和停止。
+
+
+
+###### 周期函数
+
+首先，用的最多的是Sin 和 Cos 函数，然后另外一个函数就是mod()，看图就一目了然了：
+
+<img src="img/procedure_approach_learning_1/image-20200424024817221.png" alt="image-20200424024817221" style="zoom:50%;" />
+
+再结合之前的PULSE函数
+
+<img src="img/procedure_approach_learning_1/image-20200424024828122.png" alt="image-20200424024828122" style="zoom:50%;" />
+
+###### 样条函数和映射
+
+GLSL里面没有**spline**函数（C样条曲线），但是我们只要理解算法，下面给出C语音的算法
+
+```c
+/* Coefficients of basis matrix. */
+#define CROO -0.5
+#define CR01 1.5
+#define CR02 -1.5
+#define CR03 0.5
+#define CR10 1.0
+#define CR11 -2.5
+#define CR12 2.0
+#define CR13 -0.5
+#define CR20 -0.5
+#define CR21 0.0
+#define CR22 0.5
+#define CR23 0.0
+#define CR30 0.0
+#define CR31 1.0
+#define CR32 0.0
+#define CR33 0.0
+float
+spline(float x, int nknots, float *knot)
+{
+    int span;
+    int nspans = nknots - 3;
+    float cO, cl, c2, c3; /* coefficients of the cubic.*/
+    if (nspans < 1){/* illegal */
+        fprintf(stderr, “Spline has too few knots.\n”);
+        return 0;
+    }
+    /* Find the appropriate 4-point span of the spline. */
+    x = clamp(x, 0, 1) * nspans;
+    span = (int) x;
+    if (span >= nknots - 3)
+    	span = nknots - 3;
+    x -= span;
+    knot += span;
+    /* Evaluate the span cubic at x using Horner’s rule. */
+    c3 = CROO*knot[0] + CR01*knot[l] + CR02*knot[2] + CR03*knot[3];
+    c2 = CR10*knot[0] + CRll*knot[l] + CR12*knot[2] + CR13*knot[3];
+    cl = CR20*knot[0] + CR21*knot[l] + CR22*knot[2] + CR23*knot[3];
+    cO = CR30*knot[0] + CR31*knot[l] + CR32*knot[2] + CR33*knot[3];
+    return ((c3*x + c2)*x + cl)*x + cO;
+}
+```
+
+<img src="img/procedure_approach_learning_1/image-20200424025703499.png" alt="image-20200424025703499" style="zoom:50%;" />
+
+接下来，还有一些其他的映射公式：
+
+这个是gamma矫正的公式
+
+```glsl
+float gammacorrect(float gamma, float x)
+{
+	return pow(x, 1/gamma);
+}
+```
+
+<img src="img/procedure_approach_learning_1/image-20200424030343461.png" alt="image-20200424030343461" style="zoom:50%;" />
+
+这个图是这个含义，gamma值是0.4和2.3，且x在[0,1]区间内，那么映射结果也在这个区间内。如果gamma值大于1，则曲线向上弯曲(凸)；如果gamma值属于(0,1)区间内，则曲线向下凹。
+
+然后在之后的发展中Perlin 和 Hoffert 修改了gamma矫正函数，成为一个新的函数bias(),定义了有 bias(b,0.5) = b.
+
+```glsl
+float bias(float b, float x)
+{
+	return pow(x, log(b)/log(0.5));
+}
+```
+
+<img src="img/procedure_approach_learning_1/image-20200424152921623.png" alt="image-20200424152921623" style="zoom:50%;" />
+
+同时，他们还展示了一个新的函数gain，其中两个部分是由上述的bias构成，当x等于0.5时，总是返回0.5，然后根据代码如下：
+
+```glsl
+float gain(float g, float x)
+{
+    if (x < 0.5)
+    	return bias(l-g, 2*x)/2;
+    else
+    	return 1 - bias(l-g, 2 - 2*x)/2;
+}
+```
+
+<img src="img/procedure_approach_learning_1/image-20200424153312034.png" alt="image-20200424153312034" style="zoom:50%;" />
+
+------
+
+###### 案例 制作一个砖墙纹理
+
+```glsl
+#define BRICKWIDTH 0.25
+#define BRICKHEIGHT 0.08
+#define MORTARTHICKNESS 0.01
+#define BMWIDTH (BRICKWIDTH+MORTARTHICKNESS)
+#define BMHEIGHT (BRICKHEIGHT+MORTARTHICKNESS)
+#define MWF (MORTARTHICKNESS*0.5/BMWIDTH)
+#define MHF (MORTARTHICKNESS*0.5/BMHEIGHT)
+void main() {
+    vec2 st = 1. * gl_FragCoord.xy/u_resolution.x;
+    vec3 Cbrick = vec3 (0.5, 0.15, 0.14);	//砖的颜色
+    vec3 Cmortar = vec3 (0.5, 0.5, 0.5);	//水泥的颜色
+    float ss = st.x / BMWIDTH;				//
+    float tt = st.y / BMHEIGHT;
+    float sbrick = floor(ss); 				//在x轴上共有多少砖
+    float tbrick = floor(tt); 				//在y轴上共有多少砖
+    ss += 0.5 * step(mod(tt,2.),1.0);		//如果y轴上是偶数行，则向右移动 0.5 块砖
+    float sbrick_f = fract(ss);				//取小数部分，即是在当前砖块中，此像素点所在砖块x轴的比例（位置）是？
+    float tbrick_f = fract(tt);
+    float w = step(MWF,sbrick_f) - step(1.- MWF,sbrick_f);	// 脉冲算法
+    float h = step(MHF,tbrick_f) - step(1.- MHF,tbrick_f);
+    vec3 Ct = mix(Cmortar, Cbrick, w * h);	//lerp
+    gl_FragColor = vec4(Ct,1.0);
+}
+```
+
+<img src="img/procedure_approach_learning_1/image-20200425020601340.png" alt="image-20200425020601340" style="zoom:50%;" />
+
+然后，我们需要给它加一个法线，使其更真实，首先，我们要了解法线图的原理
+
+<img src="img/procedure_approach_learning_1/image-20200425123252607.png" alt="image-20200425123252607" style="zoom:50%;" />
+
+其中，N‘ 是最终的法线，N是模型插值得到的法向量，D是在切面内的扰动向量，且垂直于N，其中F(u, v)是沿法向量N的高度的模拟
+
+$$
+U = \frac{\partial F}{\partial u}(N * \frac{\partial P}{\partial v}) \\
+V = -(\frac{\partial F}{\partial v}(N * \frac{\partial P}{\partial u})) \\
+D = \frac{1}{|N|}(U + V)
+$$
+然后，回到每一块砖块上来，我们从侧面分析一下：
+
+<img src="img/procedure_approach_learning_1/image-20200425124114957.png" alt="image-20200425124114957" style="zoom:50%;" />
+
+然后代码如下：
+
+```glsl
+float getBump(float m,float p){
+    return (smoothstep(0.,m,p) - smoothstep(1.- m,1.,p));	//平滑的脉冲函数曲线
+}
+
+vec3 calculatenormal(vec2 PP)
+{
+    //我们算出此像素前后的偏导数，因为网页版的GLSL不支持dFdx，所以我们自己算一下偏导数，
+    //首先我们需要算出此像素相邻的像素点的值，然后再高度Bump上进行采样，然后得出x，y（u，v）轴上偏导数构成的切向量
+    //进行叉乘后，进行单位化，可以得出法线 [1] 3D Graphics for Game Programming ,JungHyun Han,2012
+	vec2 d = vec2(1.,1.)/ u_resolution.x;
+	d = d / vec2(BMWIDTH,BMHEIGHT);
+    float ddx = (getBump(MWF,PP.x + d.x) - getBump(MWF,PP.x - d.x)) * 0.5;
+    float ddy = (getBump(MHF,PP.y + d.y) - getBump(MHF,PP.y - d.y)) * 0.5;
+  	return normalize(cross(vec3(1.0,0.0,ddx),vec3(0.0,1.0,ddy)));
+}
+
+void main() {
+    vec3 n = calculatenormal(vec2(sbrick_f,tbrick_f));
+    vec3 color = Ct;     
+	vec3 light = normalize(vec3(cos(u_time), sin(u_time), 1.0));    
+    vec3 lit = vec3(clamp(dot(light, n),0.0,1.0)) * 2.;	//简单的光照模拟
+    gl_FragColor = vec4(lit * color,1.0);
+}
+```
+
+最终效果如图：
+
+<img src="img/procedure_approach_learning_1/image-20200426000929943.png" alt="image-20200426000929943" style="zoom:50%;" />
+
+------
+
+###### 绘制五角星——极坐标
+
+首先先了解极坐标和直角坐标系的转换：
+$$
+\begin{cases}
+x = \rho cos\theta\\
+y = \rho sin\theta\\
+\end{cases}
+<=>
+\begin{cases}
+\rho^2=x^2+y^2\\
+tan\theta = \frac{y}{x} (x \not= 0)
+\end{cases}
+$$
+
+我门首先要将五角星分解为5个箭头形，然后在极坐标下面进行mod和计算
+
+<img src="img/procedure_approach_learning_1/image-20200426135457372.png" alt="image-20200426135457372" style="zoom:50%;" />
+
+代码如下：
+
+```glsl
+#define PI 3.1415
+#define NP 5.;
+
+void main() {
+    vec3 star_color = vec3(1.,1.000,0.0);
+    vec3 bg_color = vec3(0.,0.,0.);
+    float maxR = 0.5;
+    float minR = 0.3;
+    float angle = PI * 2. / NP;
+    float half_angle = angle / 2.;   
+    //
+    vec2 st = (gl_FragCoord.xy * 2. - u_resolution.xy )/u_resolution.x;//将坐标原点移动到中心
+    vec2 p0 = minR * vec2(cos(half_angle),sin(half_angle));
+    vec2 p1 = maxR * vec2(cos(0.),sin(0.));
+    vec2 d0 = p0-p1;	//得到如图红色的向量
+    //在极坐标下，进行mod，将其分为5个周期为angle的图形区域，并且最后除以angle，则是以此角度为单位角度，当前角度占比为多少
+    //a的值就缩放到[0,1]的范围内了，便于之后的计算~
+    float a = mod(atan(st.x,st.y) - PI * u_time * 0.2,angle) / angle;
+    //0.5 即为中间的分隔线，那么如果大于0.5，则将其镜像过来（相当于沿着中间的分割线对折了一下）
+    if (a >= 0.5)	a = 1. - a;
+    vec2 p2 = vec2(cos(a),sin(a)) * sqrt(dot(st,st));//将当前在极坐标下面的点转换回直角坐标
+    vec2 d1 = p0-p2;
+    //通过一个cross判断d0和d1两个向量的左右关系（cross后结果是垂直于d0，d1平面的，而z值的正负号，可以知道其左右关系）
+    vec3 color = mix(star_color,bg_color,smoothstep(0.,0.003,cross(vec3(d0,0.),vec3(d1,0.)).z));
+    gl_FragColor = vec4(color,1.0);
+}
+```
+
