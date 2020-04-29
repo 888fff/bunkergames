@@ -1,3 +1,5 @@
+
+
 # 程序化方法 1
 
 ### 程序化纹理
@@ -305,7 +307,7 @@ void main() {
     vec2 p1 = maxR * vec2(cos(0.),sin(0.));
     vec2 d0 = p0-p1;	//得到如图红色的向量
     //在极坐标下，进行mod，将其分为5个周期为angle的图形区域，并且最后除以angle，则是以此角度为单位角度，当前角度占比为多少
-    //a的值就缩放到[0,1]的范围内了，便于之后的计算~
+    //a的值就缩放到[0,1]的范围内了，便于之后的计算~ uTime是可以让五角星最后旋转起来~
     float a = mod(atan(st.x,st.y) - PI * u_time * 0.2,angle) / angle;
     //0.5 即为中间的分隔线，那么如果大于0.5，则将其镜像过来（相当于沿着中间的分割线对折了一下）
     if (a >= 0.5)	a = 1. - a;
@@ -316,4 +318,36 @@ void main() {
     gl_FragColor = vec4(color,1.0);
 }
 ```
+
+<img src="img/procedure_approach_learning_1/image-20200428091315785.png" alt="image-20200428091315785" style="zoom:50%;" />
+
+------
+
+**信号处理**
+
+采样和重构是图形学的基础。
+
+带宽（bandwidth）：原始信号中的信息量称之为带宽
+
+采样率（sampling rate）：单位距离上采样的点
+
+奈奎斯特频率（Nyquist frequency）
+
+
+
+<img src="img/procedure_approach_learning_1/image-20200428005738433.png" alt="image-20200428005738433" style="zoom:50%;" />
+
+<img src="img/procedure_approach_learning_1/image-20200428010632550.png" alt="image-20200428010632550" style="zoom:50%;" />
+
+改变aliasing问题，有2个大方案，改变采样率使其更紧密，或者就是修改原始信号，清理其中的高频信号！但是，其中的改变采样率并不是一个很好的办法，因为有些信号有无限带宽。或者信号的急剧变化，例如一个阶跃函数，所以单独提高分辨率可以使锯齿变小，但永远无法消除它们。
+
+由于上述第一种方案不能总是很好的解决，所以，我们需要在采样前去去除信号中的高频，这种技术被称作为低通滤波（low-pass filter），在视觉上面的表现就是模糊。这个技术的挑战就是如何让图像的模糊尽可能小，同时又可以充分减少不想要的高频信号。
+
+但是在采样前的低通滤波比较难，在计算机图形学中，一种常见策略是进行超采样(super-sample/oversample),也就是说以超过预期输出采样率的高速率进行采样(to sample it at a higher rate than the desired output sampling rate)。
+
+综上所述，为了生成具有指定分辨率的抗锯齿图像，最有效的策略是在采样前通过低通滤波去除信号中过高的频率。如果无法对信号进行滤波，最好的策略是随机地（stochastically）以尽可能高的速率对其进行超采样，并对超采样组应用离散低通滤波器。下一节将讨论如何将低通滤波构建到过程纹理中以消除混叠现象
+
+渲染器中都又一些antialiasing的方案，但是并不能解决程序纹理中的锯齿化问题（aliasing problem）。事实上，超采样过程中需要许多的着色样本，以至于速度非常慢。最后随机超采样（stochastic supersampling）只能将锯齿转化为噪声，而无法消除我们不想要的高频。
+
+用smoothstep代替step和if这种越阶函数，是可以的，但是也不是万全之策，需要根据查看纹理的远近，动态的调整smoothstep的步长，不然也会出现锯齿化或者模糊化。所以，过程纹理必须知道渲染器对纹理采样的采样率。采样率就是相关纹理空间或特征空间中相邻样本之间的间隔的倒数（The sampling rate is just the reciprocal of the spacing between adjacent samples in the relevant texture space or feature space）
 

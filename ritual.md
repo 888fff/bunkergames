@@ -1,5 +1,7 @@
 # Ritual "Bottle cap exchange"
 
+this ritual is based on the economic principle which makes the team members to communicate better and promotes the progress of project .
+
 - The Use case
   - when the team need to solve some problems which are from others
 - Team Ritual
@@ -22,6 +24,20 @@ the Bottle Cap Exchange helps team members to solve some problems which are in t
 + person should donate his stuffs or meals to exchange by others with caps.
 
 ------
+
+###### Backstory
+
+The bottle caps is the key props of the rituals,which the inspiration comes from a game named Fallout4.Therefore,I reckon that I can use the caps to be a currency which helps the persons of team to solve the problems and finish the project. This ritual is balance and circulation,because the core comes from the economic principle. It is very suitable for a little team and group who works on a project.
+
+------
+
+###### Feedback
+
+In the second page of PPT.
+
+------
+
+下面是关键内容的一个简单中文翻译
 
 - 使用的案例
   - 当小组中有人遇到一些难解的问题寻求帮助，或者再讨论的时候
