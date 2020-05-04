@@ -351,3 +351,40 @@ void main() {
 
 用smoothstep代替step和if这种越阶函数，是可以的，但是也不是万全之策，需要根据查看纹理的远近，动态的调整smoothstep的步长，不然也会出现锯齿化或者模糊化。所以，过程纹理必须知道渲染器对纹理采样的采样率。采样率就是相关纹理空间或特征空间中相邻样本之间的间隔的倒数（The sampling rate is just the reciprocal of the spacing between adjacent samples in the relevant texture space or feature space）
 
+------
+
+###### 噪音noise
+
+- 狄拉克分布(Dirac distribution) ：理想的冲击是一个重要的输入信号，图像平面上的理想冲击是用狄拉克分布定义的，$\delta(x,y)$
+
+$$
+\int_{-\infty}^\infty\int_{-\infty}^\infty\delta(x,y)dxdy = 1\\
+\delta(x,y) = 0;x,y \not= 0;
+$$
+
+​		狄拉克分布的筛选性，它提供函数$f(x,y)$在点$\lambda,\mu$的值：
+$$
+\int_{-\infty}^\infty\int_{-\infty}^\infty f(x,y)\delta(x-\lambda,y-\mu)dxdy = f(\lambda,\mu)
+$$
+​		一幅图像$f$ 可以表示成由狄拉克冲击$\delta$ 表达的点展开的线性组合。假设输入图像$f$ 已经给出，线性系统$L$ 对于输入图像$f$ 的响应 $g$ 由下式给出：
+$$
+g(x,y) = L\{f(x,y)\} = \int_{-\infty}^\infty\int_{-\infty}^\infty f(a.b)L\{\delta(x-a,y-b)\}dadb\\
+=\int_{-\infty}^\infty\int_{-\infty}^\infty f(a.b)h(x-a,y-b)dadb = (f*h)(x,y)
+$$
+​		其中$h$ 是线性系统 $L$ 的冲击响应。换句话说，线性系统 $L$ 的输出可以表示为输入图像 $f$ 与该线性系统的冲击响应 $h$ 的卷积
+
+- 卷积（convolution）：卷积是一个积分，反应一个函数$f(t)$在另一个函数上$h(t)$移动时所重叠的量。函数$f$和$h$在有限域[0,t]上的1D卷积$f*h$由下式给出：
+
+$$
+(f*h)(t) ≡ \int_0^tf(\tau)h(t-\tau)d\tau
+$$
+
+​		对卷积进行微分由
+$$
+\frac{d}{dx}(f*h) = \frac{df}{dx}*h = f*\frac{dh}{dx}
+$$
+
+
+
+
+- 白噪音（white noise）
