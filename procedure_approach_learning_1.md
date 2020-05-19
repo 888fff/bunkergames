@@ -363,6 +363,75 @@ void main() {
 
 ------
 
+###### 图像处理
+
+**RGB：**首先，来介绍一下RGB的颜色空间，如图，我们可以发现从原点(0,0,0)到(1,1,1)的连线，是灰度连线。其他三个轴为R，G，B三种颜色，
+
+<img src="img/procedure_approach_learning_1/image-20200513132601636.png" alt="image-20200513132601636" style="zoom:50%;" />
+
+**HSV/HSB：**色相被表示为绕圆锥中心轴的角度，饱和度被表示为从圆锥的横截面的圆心到这个点的距离，明度被表示为在圆锥的横截面上圆心到顶点的距离。当然也可以想象理解为圆柱体的，只不过因为随着区分出的饱和度和色相的级别数目随着明度接近黑色而减少，所以圆锥体更实用。
+
+<img src="img/procedure_approach_learning_1/122528445.png" alt="这里写图片描述" style="zoom: 25%;" />
+
+<img src="img/procedure_approach_learning_1/image-20200513134616238.png" alt="image-20200513134616238" style="zoom:25%;" />
+
+**去色(**Desaturate**)：** 传统去色方法公式  $Gray = R*0.299 + G*0.587 + B*0.114$  在shader中有：
+
+```glsl
+vec4 generic_desaturate(vec3 color, float factor)
+{
+	vec3 lum = vec3(0.299, 0.587, 0.114);
+	vec3 gray = vec3(dot(lum, color));
+	return vec4(mix(color, gray, factor), 1.0);
+}
+```
+
+我们还有另外一种方法，也可以去色：
+
+```glsl
+vec4 ps_desaturate(vec3 color)
+{
+    float bw = (min(color.r, min(color.g, color.b)) + max(color.r, max(color.g, color.b))) * 0.5;
+    return vec4(bw, bw, bw, 1.0);
+}
+```
+
+**灰度图转为二值图** 可以通过一个阈值来将其处理为 0和1，对于一张连续的图，可以用灰度值统计直方图，取峰值间的山谷的灰度值设置为阈值。
+
+**空间相关性** 对于一般的图像，图中相邻的图像单元（即：像素点）是相关的。**椒盐噪声**  是错误且孤立的像素点。消除椒盐噪声，可以用2种方法，中位数方法和clamp方法。
+
+**线性移不变（LSI）** 首先是线性系统，满足叠加原理（可加性和比例性）。其一般表达式为：
+$$
+\sum_{i=1}^Na_iy_i(n)=T\left[\sum_{i=1}^Na_ix_i(n)\right]
+$$
+可以形象的理解:
+$$
+f_1 → SYS → g_1 \\
+f_2 → SYS → g_2 \\
+\alpha f_1+\beta f_2 → SYS → \alpha g_1 + \beta g_2 \\
+$$
+其次是移不变系统（时不变），即若系统的响应与激励加于系统的时刻无关，则该系统为移不变系统。有
+$$
+若\Psi(v) = T[\xi(v)],则\Psi(v-\mu) = T[\xi(v-\mu)]
+$$
+形象理解为：
+$$
+f(x,y) → SYS → g(x,y)\\
+f(x-\alpha,y-\beta) → SYS → g(x-\alpha,y-\beta)
+$$
+单位冲击响应$h(n)$:  当输入为 $\delta(v)$，系统输出用 $\eta(v)$ 表示，则有$\eta(v)=T[\delta(v)]$ 。当一个系统的LSI系统时，它的输出 $y(n)$ 可以用输入 $x(n)$ 和单位冲击响应 $h(n)$ 的卷积来表示
+$$
+y(n) = x(n)*h(n)
+$$
+线性移不变系统是因果系统的充分必要条件是：$h(n)=0,n<0$
+
+线性移不变系统是稳定系统的充分必要条件是：单位冲击响应绝对可和。
+$$
+\sum_{n=-\infty}^\infty\left|h(n)\right| = q<\infty
+$$
+
+------
+
 ###### 噪音noise
 
 - 狄拉克分布(Dirac distribution) ：理想的冲击是一个重要的输入信号，图像平面上的理想冲击是用狄拉克分布定义的，$\delta(x,y)$
