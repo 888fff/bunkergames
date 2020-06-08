@@ -57,25 +57,27 @@
 
 48hrs-GameJam [The Rider The Girl]
 
-https://v.youku.com/v_show/id_XMzY0OTIwNTY2NA==.html
+<img src="img/resume/image-20200608115146195.png" alt="image-20200608115146195" style="zoom:50%;" />
+
+[https://v.youku.com/v_show/id_XMzY0OTIwNTY2NA==.html](https://v.youku.com/v_show/id_XMzY0OTIwNTY2NA==.html)
 
 LD26 [BloodCleaner]
 
 <img src="img/resume/image-20200608113650756.png" alt="image-20200608113650756" style="zoom:50%;" />
 
-https://v.youku.com/v_show/id_XMTQxNzAwODY0NA==.html
+[https://v.youku.com/v_show/id_XMTQxNzAwODY0NA==.html](https://v.youku.com/v_show/id_XMTQxNzAwODY0NA==.html)
 
 [MrSoap]
 
 <img src="img/resume/image-20200608113508182.png" alt="image-20200608113508182" style="zoom:50%;" />
 
-https://v.youku.com/v_show/id_XMTI4NzI2NDY0NA==.html
+[https://v.youku.com/v_show/id_XMTI4NzI2NDY0NA==.html](https://v.youku.com/v_show/id_XMTI4NzI2NDY0NA==.html)
 
 [DoubleCross]
 
 <img src="img/resume/image-20200608113600187.png" alt="image-20200608113600187" style="zoom:50%;" />
 
-https://v.youku.com/v_show/id_XMTI4ODc4NTU2NA==.html
+[https://v.youku.com/v_show/id_XMTI4ODc4NTU2NA==.html](https://v.youku.com/v_show/id_XMTI4ODc4NTU2NA==.html)
 
 下面这些是近期的作品（近期没有录屏）
 
@@ -87,9 +89,9 @@ https://v.youku.com/v_show/id_XMTI4ODc4NTU2NA==.html
 
 <img src="img/resume/image-20200608113822074.png" alt="image-20200608113822074" style="zoom:50%;" />
 
-<img src="img/resume/image-20200608113933064.png" alt="image-20200608113933064" style="zoom:50%;" />![image-20200608114022715](img/resume/image-20200608114022715.png)
+<img src="img/resume/image-20200608113933064.png" alt="image-20200608113933064" style="zoom:50%;" />
 
-![image-20200608114022715](img/resume/image-20200608114022715.png)
+<img src="img/resume/image-20200608114022715.png" alt="image-20200608114022715" style="zoom:50%;" />
 
 [BunkerTreasure]
 
