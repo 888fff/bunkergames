@@ -6,13 +6,21 @@ AR	儿童	三视图	交互	空间观念认知
 
 ###### 摘要：
 
-​	**背景：**儿童空间能力认知对于儿童成长至关重要，然而，由于实体教育存在新颖程度差，覆盖面积小，成本高昂等问题，导致大约xx%的适龄儿童无法有效建立这种能力。AR依托移动设备具有高人群覆盖程度，高趣味性和交互性，且实体部分造价低廉等特性，在应用于实体教育，尤其是平面图形与三维图形相关映射的时候，能够提升儿童空间认知能力。
+​	**背景：**儿童空间能力认知对于儿童成长至关重要，然而，由于实体教育存在新颖程度差，覆盖面积小，成本高昂等问题，导致一些适龄儿童无法有效建立这种能力。AR依托移动设备具有高人群覆盖程度，高趣味性和交互性，且实体部分造价低廉等特性，在应用于实体教育，尤其是平面图形与三维图形相关映射的时候，能够提升儿童空间认知能力。
 
 ​	**方法：**本文提出一种任务驱动式旋转三维模型匹配投影平面图形的方法，将儿童空间认知和严肃游戏的教育理念和AR应用结合，并开发一个用于提升其空间认知能力的应用程序，称之为AR-PUZZLE-APP。让儿童在交互中可以了解空间中形体在不同角度投影下的成像，以此提升儿童空间认知能力。
 
 ​	**结果：** 我们使用xxx方法，进行了xxx个对比实验，和传统xxx方法相比，本文方法可以在提升xxx能力方面达到xxx的效果。通过用户体验后的问卷统计，相比传统纸质xxx方法，能够提升识别效果xxx%
 
 ​	**结论：**通过AR方式的严肃游戏，可以有效提升儿童对三维物体角度投影匹配解谜的兴趣，并以此增加其对空间认知效果。特别是在AR中加入交互解谜的要素，使得提高趣味性和沉浸感成为可能，是一种有效提升儿童空间认知能力的方式。
+
+Background: Children's spatial ability cognition is very important for children's growth.However,there are some problems in the entity of education, such as low novelty method, small coverage area and high cost,which lead to some right-age children can not effectively build this capacity. AR method which depends on wide population coverage, high interesting,more Interactivity,and the low cost of the entity part of it can improve children's spatial cognition with appling to entity of education,especially the mapping of  the 3D graphics to the 2D shapes.
+
+Methods:In this paper, we proposed a task-driven rotating 3D model matching the projected plane figure.There is a AR-PUZZLE-APP we developed which is based the concept combined with children's spatial cognition and serious games. Meanwhile,To improve children's spatial ability cognition,this app makes children realize the images of objects in space projected from different angles with interaction.
+
+Results:
+
+Conclusions: The serious games with AR can enhance the children's interest in macthcing-puzzle of  3D object projected effectively.Moreover it can increase the children's spatial ability cognition.In particular, the addition of interactive puzzle solving elements in AR makes it possible to enhance the sense of interest and immersion.To sum up, It is a method to improve children's spatial ability cognition effectively.
 
 ###### **前言**
 
@@ -38,13 +46,17 @@ AR	儿童	三视图	交互	空间观念认知
 
 ​		**目标人群**
 
-​		在app初期的设计方面，根据发展心理学家皮亚杰[<sup>9</sup>](#refer-anchor-9)（JeanPiaget）提出的儿童认知发展的四个阶段中第2个阶段，即具体运算阶段（7-11 岁），再这个阶段中，儿童已经可以能凭借具体事物或从具体事物中获得的表象进行逻辑思维和群集运算。同时考虑到儿童使用移动设备的操作熟练度基础，因此我们要面向的年龄为第2阶段年龄段的尾部和此阶段的初期（6-8岁）为主要对象。同时在空间认知的几个方面中，选择加强在第一学段的能力，从不同角度观察后可以辨认到简单几何体和常见且复杂的几何体，并且可以为下一阶段的抽象化做铺垫。
+​		在app初期的设计方面，根据发展心理学家皮亚杰[<sup>9</sup>](#refer-anchor-9)（JeanPiaget）提出的儿童认知发展的四个阶段中第2个阶段，即具体运算阶段（7-11 岁），再这个阶段中，儿童逐步可以凭借具体事物或从具体事物中获得的表象进行逻辑思维和群集运算。同时考虑到儿童使用移动设备的操作熟练度基础，因此我们要面向的年龄为此阶段的初期（6-8岁）为主要对象。同时在空间认知的几个方面中，选择加强在第一学段的能力，从不同角度观察后可以辨认到简单几何体和常见且复杂的几何体，并且可以为下一阶段的抽象化做铺垫。
 
 ​		**系统简介**
 
 ​		本文中开发的**AR-PUZZLE-APP**是一款意在促进儿童对空间观念认知能力的严肃游戏，通过用app扫描特定的题卡，题卡中的内容即是3维物体在某角度下投影后的图形，此时，在app中会动态生成使之对应的3维模型，然后用户可以在app中用手滑动屏幕，使模型进行旋转操作，当模型旋转到特定角度后，也就是在app中观察到的模型与题卡中投影后的图形相吻合，则解谜成功，给予成功提示奖励。接下来用户可以通过扫描新的题卡来切换谜题。在题卡的设计中，会包含简单几何体，日常生活中可见的物体，且会从一些特征性的角度投影，或一些非特征性角度投影。例如图[2-1]:
 
-​		//*此处有图*
+![](img/paper_3/image-20200613104952647.png)
+
+![image-20200613105054195](img/paper_3/image-20200613105054195.png)
+
+
 
 ​		**交互方式**
 
@@ -60,8 +72,8 @@ AR	儿童	三视图	交互	空间观念认知
 
 ​		为了验证本文中开发的**AR-PUZZLE-APP**是否使用者可以正常的体验这款app，是否可以通过严肃游戏的游戏性给使用者带来趣味性和成就感，同时其谜题内容是否可以给使用者提升对空间观念的认知能力（对儿童空间的认知起积极作用）。由此我们更关注下列3个问题：
 
-1. 用户是否可以流畅的与此APP进行交互？（问卷和交互方式层面）
-2. 相比传统方法AR是否更吸引使用者？（问卷和时常）
+1. 用户是否可以流畅的与此APP进行交互？
+2. 相比传统方法AR是否更吸引使用者？
 3. 是否可以对儿童空间的认知起积极作用？
 
 为此我们需要进行一些前期准备和相关实验来回答我们提出的问题。
@@ -70,12 +82,10 @@ AR	儿童	三视图	交互	空间观念认知
 
 1. 首先，我们从A地点范围内找到X个志愿者来作为用户参与我们的实验，并记录好他们对移动设备的使用情况，使用AR的熟练度方面和对空间认知能力等进行初期的调研，其中，  年龄、移动设备熟练度和AR的熟练度，是以问卷的形式进行。而基础空间认知能力，是以题目的方式进行。我们需要在视图维度上进行测试，包括：2D平面视图与3D视图的转换，以及基于特殊纹理标记物3D视图的识别，和3D视图不同视角的识别。统计数据表格如下：
 
-   | 用户 | 年龄 | 移动设备熟练度 | AR的熟练度 | 测试题1--时间及正确值 | 测试题2--时间及正确值 |
-   | ---- | ---- | -------------- | ---------- | --------------------- | --------------------- |
-   |      |      |                |            |                       |                       |
-   |      |      |                |            |                       |                       |
-   |      |      |                |            |                       |                       |
-
+   | 用户 | 年龄 | 移动设备熟练度 | AR的熟练度 |
+   | ---- | ---- | -------------- | ---------- |
+   |      |      |                |            |
+   
    描述一下表格中的统计内容....
 
    
@@ -111,11 +121,11 @@ AR	儿童	三视图	交互	空间观念认知
 
      ​	用户在使用期间，……，用户在之后的调查问卷中也可以了解到 ……
 
-  2. 相比传统方法AR是否更吸引儿童和其使用者？
+  2. *相比传统方法AR是否更吸引儿童和其使用者*
 
      ​	不难发现通过调查问卷中，且分析其时常，
 
-  3. *是否可以促进儿童对空间的认知*（或起着积极的促进作用）
+  3. *是否可以对儿童空间的认知起着积极的促进作用*
 
        通过与初次检测的试题时间和准确度相比，他们在app解谜题时间上，随着题目……
 
@@ -123,7 +133,7 @@ AR	儿童	三视图	交互	空间观念认知
 
 1. 对于面向的群体用户，需要在制作题卡时，进行风格化的美术处理，这样在题板的部分会让用户产生用AR扫一扫和解谜的欲望，但是又需要不失去以提升儿童空间感的动机部分，即3维物体的空间投影和观察的抽象。
 2. 使用热更新技术使其商业化。利用Unity3D引擎的热更新技术，可以根据需要动态的更新app的逻辑和资源，减少因为下载完整app所带来的流量浪费和用户的流失，同时近最大限度的保护app的品牌效应，减少推广成本。
-3. AR和严肃游戏结合的可能性，在AR生成3D模型后，可以动态的让玩家对其进行切面，来匹配目标的2D图形。
+3. AR和严肃游戏结合的可能性添加新的玩法，例如在AR生成3D模型后，可以动态的让玩家对其进行切面，来匹配目标的2D图形。
 
 ​		通过上述3个问题的结果分析，和之后的调查问卷现实，本文中的app作为一款严肃游戏，包含解谜游戏的可玩性让用户沉浸，且谜题设计也是循序渐进的，而且可以给予用户成就感来提升对游戏的黏着度。作为“严肃”的内核，促进用户空间观念认知能力是初心，也是目的所在。而且同比传统的纸质3视图的方法和实物的观察学习，在体验趣味以及经济和可行性方面均有优势的体现。
 
