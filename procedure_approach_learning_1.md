@@ -551,3 +551,661 @@ $$
 **Value-Gradient Noise**  为了避免梯度噪声在整数格点处为0而表现出明显的网格，同时又不丧失梯度噪声频谱的优势，尝试将值和梯度结合起来，它是值噪声和梯度噪声的加权和。
 
 **Lattice Convolution Noise** 因为Lattice Noises会经常出现轴对齐的非自然的感觉，我们通过用离散的卷积技术来做插值从而避免各向异性。在格点上的prn被视为随机脉冲的值，并与径向对称滤波器进行卷积
+
+------
+
+###### 开发 Shader 的策略
+
+- 找到真实世界中的照片和视频，或者是风格化的概念图。
+- 不要从零开始，找到一个和即将要尝试去完成的shader相似的一个现有的shader作为出发点。如果有offline shader的话，也可以进行一些启迪和参考。还可以去硬件公司的网站上去寻找相关的shader。
+- 今天迭代开发，然后不断观察图像的现象变换，而非基于物理的过程模拟。
+- 考虑不同的一些方法：在有些情况下，进行纹理采样是最简单最好的，而某些时候程序化的方法又会非常好。
+- 而且要考虑和优化着色器的性能。
+
+------
+
+###### 细胞结构体(CELLULAR TEXTURING)
+
+噪音有一种“去色”和“山脉”的感觉，而细胞结构体更像“海绵”，“蜥蜴鳞片”，“鹅卵石”的感觉。它们经常把空间分成小的，随机平铺的区域。虽然这些区域是离散的，细胞的基函数本身是连续的。可以在空间的任何地方计算。噪声和细胞结构体的行为是互补的。
+
+<img src="img/procedure_approach_learning_1/image-20200817012042457.png" alt="image-20200817012042457" style="zoom:50%;" />
+
+对于像素的采样点$x$和固定的特征点(fixed feature point)的距离$F(x)$,找到最小值$F_1$，根据距离排序$F_1<F_2<F_3...$..当然，我们可以调整函数$F$，使之变形为一些其他的函数，例如：$color = F_1F_2$ 或者是 $ color = F_2 - F_1 $
+
+在shader开发时候，我们可以利用将屏幕切分为网格进行优化，每个网格中随机生成一个特征点，我们知道一个随机函数应该具有hash性(见上文)，所以我们可以缩放代码中的st，然后拆分开st的整数和小数部分，
+
+
+
+```glsl
+vec2 random2( vec2 p ) {
+    return fract(sin(vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3))))*43758.5453);
+}
+void main() {
+    vec2 st = gl_FragCoord.xy/u_resolution.xy;
+    st.x *= u_resolution.x/u_resolution.y;
+    vec3 color = vec3(.0);
+    // Scale
+    st *= 5.;
+    // Tile the space
+    vec2 i_st = floor(st);
+    vec2 f_st = fract(st);
+
+    float m_dist = 1.;  // minimum distance
+    for (int j= -1; j <= 1; j++ ) {
+        for (int i= -1; i <= 1; i++ ) {
+            // Neighbor place in the grid
+            vec2 neighbor = vec2(float(i),float(j));
+            // Random position from current + neighbor place in the grid
+            vec2 offset = random2(i_st + neighbor);
+            // Animate the offset
+            offset = 0.5 + 0.5*sin(u_time + 6.2831*offset);
+            // Position of the cell
+            vec2 pos = neighbor + offset - f_st;
+            // Cell distance
+            float dist = length(pos);
+            // 这个函数会做变形
+            //m_dist = min(m_dist, dist);
+            m_dist = min(m_dist, m_dist*dist);
+        }
+    }
+
+    // 绘制函数
+    color += step(0.060, m_dist);
+    //color += m_dist;
+
+    gl_FragColor = vec4(color,1.0);
+}
+```
+
+此shader的效果如图:
+
+<img src="img/procedure_approach_learning_1/image-20200818112331150.png" alt="image-20200818112331150" style="zoom:50%;" />
+
+如果，将28行和35行解注释后，我们可以得到，传统的cellar texturing
+
+<img src="img/procedure_approach_learning_1/image-20200818112513161.png" alt="image-20200818112513161" style="zoom:50%;" />
+
+
+
+------
+
+###### PRACTICAL METHODS FOR TEXTURE DESIGN
+
+**The Art of Noise**
+
+想减少掉分形噪音（fractal noise algorithm）中有人工生成的痕迹（artifacts），隐藏此痕迹的方法是旋转每个累加的缩放对齐到随机方向。因为不同缩放(scales)的格子不会对齐，所以人工的痕迹不会那么明显。例如旋转1/8个圆周。在凹凸贴图部分，这个旋转技巧非常有用，因为噪声值的区别清楚的暴露了格点的痕迹，沿着格点线的二阶导数明显不连续。当你的凹凸贴图进行微分时，这些二阶导数变成了不连续的一阶导数。
+
+另一个帮助隐藏噪声人工痕迹（artifacts）的策略是智能地选择缝隙(连续尺度大小之间的比率)，自然的缝隙是0.5，但是不要用这个，最好使用有很多数字的值(比如0.485743或0.527473)，这样可以得到相同的有效比率。如果用0.5，人工的痕迹会周期性的出现。
+
+不要忽视对分形噪声算法的增强（enhancements ）或变体（variants ）。将噪声插值扩展到四维空间特别有用，因为这允许您创建时间动画分形噪声。
+
+**Color Mappings**
+
+这种映射允许用户对所应用的颜色进行相当多的控制，而且它的简单性使它既容易实现，也便于用户控制，哪怕是使用原始数值作为输入。我曾经非常成功地使用过一种映射方法，它定义了四种“转换”值。这些转换值控制某个映射函数的位置和形状，该映射函数将分形噪声(或其他函数)值转换为从0到1的输出值。图6.2显示了该函数的形状。标记为T1和T2的两个转换分别由开始值和结束值定义。通过设置发生这些转换的不同级别，可以实现从渐变到阶梯函数到更复杂的“带通（bandpass）”形状的各种各样的映射。
+
+<img src="img/procedure_approach_learning_1/image-20200821153821753.png" alt="image-20200821153821753" style="zoom:50%;" />
+
+[^color]: “颜色”这个词总是被松散地使用。大多数物体表面属性可以通过纹理控制，而物体的漫反射颜色是最经常修改的值，任何其他表面属性都可以使用完全相同的方法控制。它只是说“颜色”比“表面属性指定一些矢量，你可以修改你的纹理界面”容易得多。
+
+**Bump-Mapping Methods**
+
+在基本纹理中添加凹凸贴图并不是很难。如果你有一个函数可以映射标量场到一个数值（例如颜色映射后的分形噪声值或者是一个大理石的扰动的正弦值），你可以把标量函数在三个方向（x,y,z）上的导数，把这些值加到表面的法线上，然后重新单位化（renormalize ）。还应该为用户添加一个参数来控制凹凸的起伏高度，这只是在添加之前乘以了一个导数（derivative），这样用户就可以通过使用一个零值来关闭凹凸贴图，或者通过使用一个负值来让凹凸感相反。
+
+[^derivative]: 上述的这个导数，其实应该想让其乘一个凹凸值的变化量。
+
+在几何图形的例子中(例如，一个六边形网格，甚至一个普通的棋盘格)，没有一个真正的函数可以求导数。在本例中，我喜欢做一个“山脊”，它基本上是沿着图形的外部边界在边界内以固定的(用户定义的)距离延伸的一条线。这个山脊基本上在图形的外边缘形成一个斜面，允许用户使图形看起来向上或向下进入表面。图6.3展示了一个简单的斜面如何使平面图形显示为三维的示例。
+
+<img src="img/procedure_approach_learning_1/image-20200821161024117.png" alt="image-20200821161024117" style="zoom:50%;" />
+
+但是一个简单的三角形斜角是非常普通的。最好是可以给用户更多的控制形状的外缘，使各种形状，从方形槽到用珠子填补的圆形槽。在棋盘的情况下，用户可以做一个凹圆型凹陷，这将使砖块看起来像他们被砂浆接缝包围。
+
+我尝试了几种方法来让用户控制这些脊线的形状，但其中一种是最有用的。您不想让用户使用太多的参数，但是您仍然希望给他们足够的控制来创建各种各样的关节。我发现只有四个参数的组合在定义各种斜角形状时非常有效。
+
+第一个参数是脊宽。缝或斜角的总宽度是多少？在大多数情况下，这个斜面将会对接到另一个接缝，所以你可能想要在内部平分一半数字。（这方面的一个例子是棋盘:每一块砖都紧挨着它的邻居。对于使用者来说，考虑接合处的总宽度比只考虑一块中接合处部分的宽度更容易。)
+
+第二个参数是我所说的“平台宽度”。“这是山脊外的一段距离，没有受到影响。这允许用户在接缝的中间有一个平的部分，类似由斜面形成的悬崖壁之间的山谷。这个平台显然必须小于斜面的总宽度。
+
+最后两个参数控制斜面的形状。如果你把山脊想象成一个奇特的阶跃函数(它从低到高，中间有一些变化)你就可以用一条直线，一条平滑的S曲线，或者中间的任何东西来定义它。我发现在过渡上使用平滑的三次曲线允许用户通过设置两个数字来定义最有用的形状，这两个数字是曲线在过渡开始和结束时的斜率。坡度为0.0将与表面的其余部分进行平滑的混合，如果两个坡度都为1.0，过渡将是一个经典的直线斜角。图6.4最好地显示了这一点，它还显示了如何使用平台。
+
+<img src="img/procedure_approach_learning_1/image-20200821161647978.png" alt="image-20200821161647978" style="zoom:50%;" />
+
+这些坡度控制对于制作不同的山脊轮廓很明显是有用的，但是如何将参数转换成可以用于凹凸贴图的数字呢？最好的方法是使用简单的Hermite混合曲线。Hermite曲线是一种简单类型的样条，由一个范围从0到1的三次多项式定义。三次多项式是非常方便的，因为它的计算成本很低，而且有四个自由度来控制它的形状。我们可以通过设置起始值和结束值以及斜率来完全定义这个三次曲线。
+
+我们有四个值(开始和结束高度，开始和结束斜率)，我们可以使用它来构建三次多项式，将四个Hermite函数的加权副本相加。F(t)是唯一的满足这四个约束条件的三次多项式。
+
+这些混合函数被称作$P_1,P_4,R_1,R_4$，表示的值为$F(0),F(1),F'(0),F'(1)$如图：
+$$
+P_1 = 2t^3 − 3t^2 + 1\\
+P_4 = −2t^3 + 3t^2\\
+R_1 = t^3 − 2t^2 + t\\
+R_4 = t^3 − t^2\\
+P_1′ = 6t^2 − 6t\\
+P_4′ = −6t^2 + 6t\\
+R_1′ = 3t^2 − 4t+1\\
+R_4′ = 3t^2 − 2t
+$$
+![image-20200821162728148](img/procedure_approach_learning_1/image-20200821162728148.png)
+
+在山脊的情况下，起始值和结束值将始终分别固定为0和1，用户提供两个斜坡（slopes）(将底部和顶部称为$s_b$和$s_t$，这个是用户自定义的参数)，因此，脊形的曲线是$P_1 + s_bR_1 + s_tR_4$。曲线在碰撞点处的导数为$P_1'(t) + s_bR_1'(t) + s_tR_4'(t)$。这告诉我们在碰撞点的山脊的斜坡（slope）：当我们添加表面法线时使用的权重。
+
+
+
+------
+
+###### PROCEDURAL MODELING OF GASES
+
+**INTRODUCTION**
+
+本章介绍了体积程序化建模和纹理的框架。体积程序化模型是一种通用的程序化技术，对建模自然现象很有帮助。大多数图形应用程序使用基于表面的对象模型；然而，这些模型不足以有效地捕捉许多自然现象(如水、火、烟、蒸汽、云和其他气体现象)错综复杂的空间填充特征。体积模型也广泛用于建模毛皮和其他“软”对象。
+
+本章首先总结了之前的气体建模方法，然后简要介绍了我的气体体积光线追踪系统和几种使用图形硬件实现这些效果的方法。接着介绍三维“solid spaces”的概念，强调程序化（功能/纹理）空间与物体、屏幕空间的关系。最后，详细总结了如何创建气体的静止图像。
+
+**PREVIOUS APPROACHES TO MODELING GASES**
+
+在计算机图形学中模拟气体的尝试始于20世纪70年代末。从那时起，出现了许多不同的方法。这些可以被归类为气体几何建模技术和渲染气体和大气效果场景的技术
+
+我已经开发了几种基于体积密度函数建模气体的方法(Ebert 1991; Ebert and Parent 1990; Ebert, Ebert, and Boyer 1990; Ebert, Boyer, and Roble 1989)。相比以前的技术这些模型是真实的三维模型的几何气体而且提供了更真实的结果。
+
+Stam和Fiume(1991,1993,1995)也使用气体的三维几何模型。该模型使用“模糊斑点（fuzzy blobbies）”，类似于体积元和粒子系统，为气体的几何模型。Stam和Fedkiw已经将这项工作扩展到使用基于物理的Navier-Stokes解决方案来建模气体，并取得了非常逼真的效果(Stam 1999;Fedkiw, Stam, and Jensen 2001)。
+
+Sakas(1993)使用谱合成来定义气体的三维几何模型。许多作者使用了各种技术来详细建模和实时逼近云，这将在第9章中描述。
+
+在计算机图形学中，云、雾、大气扩散效应和其他气体现象的场景渲染也是一个活跃的研究领域。
+
+有几篇论文描述了大气扩散效应（Willis 1987; Nishita, Miyawaki, and Nakamae 1987; Rushmeier and Torrance 1987; Musgrave 1990；）
+
+其他的则详细介绍了这些气体现象的照明情况（Blinn 1982a; Kajiya and Von Herzen 1984; Max 1986; Klassen 1987; Ebert and Parent 1990）。大多数作者使用low-albedo反射模型，少数((Blinn 1982a; Kajiya and Von Herzen 1984; Rushmeier and Torrance 1987; Max 1994; Nishita, Nakamae, and Dobashi 1996; Wann Jensen and Christensen 1998; Fedkiw, Stam, and Wann Jensen 2001)讨论了high-albedo模型的实现。(低反照率模型假定二次散射效应可以忽略，而高反照率光照模型计算二次或更高阶散射效应。)在过去的几年中，在开发气体和云的交互渲染技术方面也做了大量的工作，如第10章所述。
+
+**Volume-Rendering Algorithm**
+
+该系统中用于气体的体渲染技术与Perlin和Hoffert(1989)中讨论的技术类似。光线从眼睛通过像素被追踪通过定义的几何体。对于通过体积截面的每个增量，计算体积密度函数。然后计算每个样本的颜色、密度、不透明度、阴影和光照。照明和密度的积累是基于低反照率（low-albedo）照明模型的气体和大气衰减。
+
+基础的气体体渲染算法如下：
+
+```c
+for each section of gas
+	for each increment along the ray
+		get color, density, & opacity of this element
+		if self_shadowing
+			retrieve the shadowing of this element from the solid shadow table
+		color = calculate the illumination of the gas using opacity, density & the appropriate model
+		final_clr = final_clr + color;
+		sum_density = sum_density + density;
+		if( transparency < 0.01)
+			stop tracing
+		increment sample_pt
+	create the a_buffer fragment
+```
+
+沿着光线采样，用蒙特卡罗方法选择采样点，以减少人为现象。不透明度是通过计算体积密度函数乘以步长得到的密度。这种乘法是必要的，因为在气体模型中，我们正在逼近一个积分来计算沿着射线的不透明度(Kajiya和Von Herzen, 1984)。使用的近似是：
+$$
+opacity = 1-e^{-\tau\times\sum_{t_{near}}^{t_{far}}\rho(x(t),y(t),z(t))\times{\Delta}t}
+$$
+其中$\tau$是材质的光学深度，$\rho()$是材质的密度，$t_{near}$是体追踪的起始点$t_{far}$是结束点。最终沿着光线的增幅会越来越小，所以它的不透明度是按比例缩放的(Kajiya and Kay 1989)
+
+**Illumination of Gaseous Phenomena**
+
+该系统采用了基于Kajiya和Von Herzen(1984)的低反照率气体照明模型，所使用的相位函数是Blinn (1982a)中描述的Henyey-Greenstein函数的和。光照模型如下:
+$$
+B= \sum_{t_{near}}^{t_{far}}e^{-\tau\times\sum_{t_{near}}^{t}\rho(x(u),y(u),z(u))\times{\Delta}t}\times{I}\times{\rho(x(t),y(t),z(t))}\times{\Delta{t}}
+$$
+其中$I$是：
+
+
+$$
+\sum_{i}I_i(x(t),y(t),z(t))\times{phase(\theta)}
+$$
+${phase(\theta)}$ 是相位函数，这个函数描述了粒子的总亮度是光与眼睛之间角度的函数。$I_i(x(t),y(t),z(t))$是光的数量，这些光来自于这个元素反射的光源$I$。
+
+气体的自阴影通过减弱每盏灯的亮度而并入$I$，高反照率照明模型的近似也可以通过在$I_i$中加入一个基于材料反射率的环境项来实现。由于二阶和高阶散射效应，这个环境项占了从元素反射的光的百分比。
+
+**Volumetric Shadowing**
+
+体积阴影是重要的获取准确的图像。如上所述，自阴影可以通过减弱每盏灯的亮度而纳入到照明模型中。对气体进行自阴影的最简单的方法是从每个体元到每个光跟踪一条射线，利用前面的不透明度方程来确定沿着射线的材料的不透明度。这种方法类似于在光线追踪中执行的阴影计算，可能会非常慢。我的实验表明，光线跟踪自阴影可以占总计算时间的75%到95%。
+
+为了加速阴影计算，可以使用一个预先计算的表。Kajiya在光源处于无穷大的限制下讨论了这种方法(Kajiya and Von Herzen 1984; Kajiya and Kay 1989)。我对这种方法进行了扩展，以消除这种限制。使用我的技术，光源甚至可以在体内部。这种基于阴影表的技术可以比光线跟踪阴影技术提高10-15倍的性能。对这种阴影技术的完整描述可以在Ebert(1991)中找到
+
+阴影表每帧计算一次。要使用阴影表进行体跟踪，需要确定样本点在阴影表中的位置。这个点将位于由八个表项组成的平行六面体中。这八个入口是三边插值，以获得这个样本点和光之间的密度的总和。为了确定光的衰减量，使用下面的公式：
+
+
+$$
+light\_atten = 1 - e^{-\tau\times{densities\times}step_size}
+$$
+**ALTERNATIVE RENDERING AND MODELING APPROACHES FOR GASES**
+
+对于气体有三种常用的替代渲染方法
+
+- 粒子系统
+- 广告版代替
+- 三维硬件纹理映射
+
+粒子系统最常用于稀薄气体，如烟雾。用粒子系统处理气体有两个问题：第一个是计算粒子自阴影的复杂性，第二个是模拟大范围或密集区域的气体(模拟可能需要数百万个粒子)的计算复杂性。广告牌代替技术被有效地使用在交互式云渲染中，但为了提高交互渲染的效率，对云的动画和光源施加了一些限制(Dobashi et al. 2000; Harris and Lastra 2001)，三维硬件纹理映射可用于基于切片的体绘制来模拟云和其他致密气体(Kniss, Kindlmann, and Hansen 2002)，一个粗糙的体表现和程序细节的组合，可以在图形处理器中渲染，被用来产生令人信服的体积效果。
+
+**A PROCEDURAL FRAMEWORK: SOLID SPACES**
+
+本节将介绍一种用于过程技术的通用而灵活的框架，称为固体空间。这个框架的发展，它的数学定义，以及它在程序纹理和建模中的作用描述如下：
+
+**· Development of Solid Spaces**
+
+我的气体建模和动画的方法开始于在实体纹理上工作。实体纹理可以看作是创建一个围绕物体的三维色彩空间。当实体纹理被应用到对象上时，就好像定义的空间被分割开了。一个很好的例子是使用实体纹理创建由木头和大理石制成的对象。实体纹理空间定义了对象在木材或大理石的三维体积。
+
+我的大部分实体纹理程序是基于噪音和湍流的功能。当我被要求制作一只蝴蝶从迷雾中出现的图像时，我的工作扩展到了建模气体。由于气体是由湍流控制的，它似乎很自然地以某种方式将噪声和湍流函数的使用纳入到这个模型中。我的渲染系统已经支持多对象特性的实体纹理，所以我开发的方法是使用实体纹理透明度来产生雾或云层。实体纹理透明功能，当然是基于湍流。这种方法与Gardner的方法（Gardner 1985）非常相似，并且有同样的缺点，即不是一个真正的三维模型，虽然实体纹理程序是在整个三维空间中定义的。在这两种情况下，这些三维程序只在物体表面进行评估。为了弥补这个缺点，我的下一个扩展方法是使用基于湍流的程序来定义三维体的密度，而不是控制中空表面的透明度。
+
+正如您所看到的，使用三维空间来表示对象属性（如颜色、透明度甚至几何形状）是这一进度中的一个常见主题。我使用这种思想来表示对象属性的系统称为实体空间。实体空间框架在一个统一的框架内包含了传统的实体纹理、超纹理和体密度功能。
+
+**· Description of Solid Spaces**
+
+实体空间是与对象关联的三维空间，允许控制对象的属性。例如，在第2章和第6章中描述的实体颜色纹理中，纹理空间是与对象相关的实体空间，它定义了对象所占据的体积中每个点的颜色。这个空间可以被认为与创建对象的材料空间相关联描述。
+
+实体空间在描述对象属性时有很多用途。如前所述，实体空间可用于表示对象的颜色属性。对于那些颜色由定义大理石颜色空间的过程决定的对象来说，这是非常自然的。许多作者使用固体色空间来创造自然物体的真实图像（Perlin 1985; Peachey 1985; Musgrave and Mandelbrot 1989）。通常在实体纹理（使用固体色空间（solid color spaces)）中，会有额外的实体空间，它们结合起来定义颜色空间。例如，在我的大部分固体纹理的工作中，噪音和湍流空间被用来定义颜色空间。其他实体空间的例子包括几何（超纹理和体密度函数），粗糙度（实体凹凸贴图），反射率，透明度，光照特性，和物体的阴影。实体空间甚至可以用来控制对象的动画，这将在下一章中描述。
+
+**· Mathematical Description of Solid Spaces**
+
+实体空间可以用简单的数学术语来描述。它们可以被认为是一个从3维空间到n维空间的函数（其中n可以是任意的非零正整数），更正式地，实体空间可以定义为以下函数：
+$$
+S(x,y,z) = F,F\in{R^n},n\in{1,2,3,...}
+$$
+当然，实体空间的定义可以随时间而改变；因此，时间可以被认为是一个四维的固体空间函数。对于实体空间的大多数应用，$S$是一个贯穿整个三维空间的连续函数。例外情况是使用实体空间表示几何对象。在这种情况下，$S$通常在物体的边界处不连续。例如，在隐式曲面的情况下，$S$通常在对象的整个曲面上都是连续的，但是阈值法被用于突然将密度值更改为0，对于那些密度不在定义对象表面的狭窄范围值内的点来说。$F$的选择决定了产生的立体空间的频率，因此也决定了最终图像中可能出现的混叠伪影（aliasing artifacts）的数量。
+
+**GEOMETRY OF THE GASES**
+
+现在已经讨论了一些背景资料，这一节将描述建模气体的详细程序。如引言中提到的，气体的几何形状是用基于湍流（turbulent-flow-based）的体积密度函数来建模的。体积密度函数取该点在世界空间中的位置，在湍流空间（一个三维空间）中找到对应位置，并应用湍流函数。湍流函数返回的值用作气体密度的基础，然后用简单的数学函数“塑造”来模拟所需的气体类型。在接下来的讨论中，我将首先描述我的噪声和湍流函数，然后描述用于塑造气体的基本数学函数的使用。最后，探索几个建模几何气体的例子程序的发展。
+
+**· My Noise and Turbulence Functions**
+
+在这本书的早期章节，详细的描述噪音和湍流，包括噪音和湍流函数与更好的谱特征。我提供了我的实现方法，使读者能够再现这一章所描述的气体的图像。如果使用其他噪声实现，则所需的气体形状将略有不同(我已经试过了) 。我的噪声实现使用存储在规则网格的格点上的随机数字的三边线性插值。我使用的网格大小为64×64×64。该3D数组实际为65×65×65，最后一列等于第一列，便于访问条目（$noise[64][64][64] = noise[0][0][0]$）。要使用3D纹理映射硬件实现这一点，您可以简单地创建64×64×64表，并将纹理重复模式改为repeat。这个基于随机数格的噪声实现实际上非常适合3D纹理映射硬件实现，简单的DirectX或OpenGL调用从这个3D纹理映射读取值将自动执行噪声格插值。
+
+```c
+// //////////////////////////////////////////////////////
+// WRITE_NOISE.C
+// This program generates a noise function file for solid texturing.
+// by David S. Ebert
+// //////////////////////////////////////////////////////
+#include <math.h>
+#include <stdio.h>
+#define SIZE 64
+double drand48();
+int main(int argc, char **argv )
+{
+    long i,j, k, ii,jj,kk;
+    float noise[SIZE+1][SIZE+1][SIZE+1];
+    FILE *noise_file;
+    noise_file = fopen(“noise.data”,”w”);
+    for (i=0; i<SIZE; i++) 
+        for(j=0; j<SIZE; j++) 
+            for(k=0; k<SIZE; k++)
+            {
+            	noise[i][j][k] = (float)drand48( );
+            }
+    // This is a hack, but it works. Remember this is
+    // only done once.
+    for (i=0; i<SIZE+1; i++)
+    	for (j=0; j<SIZE+1; j++)
+            for (k=0; k<SIZE+1; k++)
+            {
+                ii = (i == SIZE)? 0: i;
+                jj = (j == SIZE)? 0: j;
+                kk = (k == SIZE)? 0: k;
+                noise[i][j][k] = noise[ii][jj][kk];
+            }
+    fwrite(noise,sizeof(float),(SIZE+1)*(SIZE+1)*(SIZE+1),noise_file);
+    fclose(noise_file);
+}
+```
+
+为了计算三维空间中某一点的噪声，调用下面给出的calc_noise()函数。这个函数复制噪声晶格以填充三空间的正八方向。要用这个方法，这些点必须在空间的这个八方向。我允许用户为每个对象输入比例和平移因子，以在噪声空间中定位对象。
+
+下面给出的噪声程序calc_noise使用格点值的三线性插值来计算该点的噪声。下面给出的turbulence()函数为标准的Perlin湍流函数(Perlin 1985)。
+
+```c
+typedef struct xyz_td
+{
+	float x, y, z;
+} xyz_td;
+float calc_noise( );
+float turbulence( );
+// //////////////////////////////////////////////////////
+// Calc_noise
+// This is basically how the trilinear interpolation works. I
+// lerp down the left front edge of the cube, then the right
+// front edge of the cube(p_l, p_r). Then I lerp down the left
+// back and right back edges of the cube (p_l2, p_r2). Then I
+// lerp across the front face between p_l and p_r (p_face1). Then
+// I lerp across the back face between p_l2 and p_r2 (p_face2).
+// Now I lerp along the line between p_face1 and p_face2.
+// //////////////////////////////////////////////////////
+float calc_noise(xyz_td pnt)
+{
+    float t1;
+    float p_l,p_l2,// value lerped down left side of face 1 & face 2
+    p_r,p_r2, // value lerped down left side of face 1 & face 2
+    p_face1, // value lerped across face 1 (x-y plane ceil of z)
+    p_face2, // value lerped across face 2 (x-y plane floor of z)
+    p_final; //value lerped through cube (in z)
+    extern float noise[SIZE+-1][SIZE+-1][SIZE+-1];
+    register int x, y, z, px, py, pz;
+    px = (int)pnt.x;
+    py = (int)pnt.y;
+    pz = (int)pnt.z;
+    x = px &(SIZE); // make sure the values are in the table
+    y = py &(SIZE); // Effectively replicates table throughout space
+    z = pz &(SIZE);
+    t1 = pnt.y - py;
+    p_l = noise[x][y][z+1]+t1*(noise[x][y+1][z+1]-
+    noise[x][y][z+1]);
+    p_r = noise [x+1][y][z+1]+t1*(noise[x+1][y+1][z+1]-
+    noise[x+1][y][z+1]);
+    p_l2 = noise[x][y][z]+ t1*(noise[x][y+1][z] -
+    noise[x][y][z]);
+    p_r2 = noise[x+l][y][z]+ t1*(noise[x+1][y+1][z]-noise[x+1][y][z]);
+    t1 = pnt.x - px;
+    p_face1 = p_l + t1 * (p_r - p_l);
+    p_face2 = p_12 + t1 * (p_r2 - p_l2);
+    t1 = pnt.z - pz;
+    p_final = p_face2 + t1*(p_face1 - p_face2);
+    return(p_final);
+}
+
+//
+// ///////////////////////////////////////////////////
+// TURBULENCE
+// ///////////////////////////////////////////////////
+float turbulence(xyz_td pnt, float pixel_size)
+{
+    float t, scale;
+    t=0;
+    for(scale=1.0; scale >pixel_size; scale/=2.0)
+    {
+        pnt.x = pnt.x/scale; 
+        pnt.y = pnt.y/scale;
+        pnt.z = pnt.z/scale;
+        t += calc_noise(pnt) * scale;
+    }
+    return(t);
+}
+```
+
+这两个例程都没有优化。采用位移操作对整数格进行索引，可以优化噪声格的访问。预先计算缩放乘子表，用乘以倒数来代替除法，可以优化湍流函数。
+
+**· Basic Gas Shaping**
+
+几种基本的数学函数被用来塑造气体的几何形状。第一个是幂函数。让我们来看看创建气体模型的一个简单过程，看看幂函数和其他函数对气体最终形状的影响
+
+```c
+void basic_gas(xyz_td pnt, float *density,float *parms)
+{
+    float turb;
+    int i;
+    static float pow_table[POW_TABLE_SIZE];
+    static int calcd=1;
+    if(calcd) 
+    { 
+        calcd=0;
+        for(i=POW_TABLE_SIZE-1; i>=0; i--)
+            pow_table[i]=(float)pow(((double)(i))/(POW_TABLE_SIZE-1)*parms[1]*2.0,(double)parms[2]);
+    }
+    turb = turbulence(pnt, pixel_size);
+    *density = pow_table[(int)(turb*(.5*(POW_TABLE_SIZE-1)))];
+}
+```
+
+------
+
+###### ANIMATING SOLID SPACES
+
+前一章讨论了气体的几何模型。本章讨论了动画气体和其他程序定义的实体空间。有几种方法可以使实体空间动画。本章将考虑两种方法:
+
+1. 随着时间改变固体空间
+2. 通过实体空间移动被渲染的点
+
+第一种方法将时间作为参数，随时间改变空间的定义，这是一种非常自然和明显的动画程序技术方式。使用这种方法，在设计过程时必须考虑时间，而过程会随着时间而演变。更改空间以模拟生长、进化或老化的过程是这种方法的常见示例。一个相关的技术在一个四维空间中创建程序，时间作为第四维，例如四维噪声函数。
+
+第二种方法实际上并没有改变实体空间，而是随着时间移动空间中的点或物体，实际上是程序地扭曲或扰动空间。在评估湍流函数使气体产生动画(固体纹理，超纹理)之前，通过固体空间沿路径移动固定的三维屏幕空间点。每个三维屏幕空间点都被反映射回世界空间。从世界空间，它被映射到气体和湍流空间通过使用简单的仿射变换。最后，随着时间的推移，它通过湍流空间产生运动。因此，路径方向会产生相反的视觉效果。例如，应用于屏幕空间点的向下路径将显示上升的纹理或体积对象。图8.1说明了这个过程。
+
+<img src="img/procedure_approach_learning_1/image-20200912161250805.png" alt="image-20200912161250805" style="zoom:67%;" />
+
+这两种技术都可以应用于固体纹理、气体和超纹理。在动画路径的简短讨论之后，这两种技术的应用到固体纹理被讨论，接着是他们被用于气体动画和超纹理的方式的探索，包括液体。最后，本章以一个额外的程序动画技术，粒子系统的讨论结束。
+
+**· ANIMATION PATHS**
+
+本章将介绍创建动画路径的各种方法，通过固体空间的运动。对于许多例子，我将使用螺旋(螺旋)路径。使用螺旋路径有两个原因。首先，大多数气体不沿线性路径运动。湍流、对流、风等等，改变了运动的路径。根据我的观察，烟、蒸汽和雾在特定方向移动时会产生漩涡。螺旋路径可以捕捉运动的一般感觉。第二，螺旋路径很容易计算。计算包括绕螺旋轴旋转(运动方向)和沿轴运动。为了创建旋转，使用了正弦和余弦函数。这些函数的角度是基于帧编号，以产生随时间的旋转。旋转速率可以通过将帧数模数取为一个常数来控制。同样基于帧号的线性运动将用于创建沿着轴的运动。
+
+下面的代码段创建了一个每100帧围绕轴旋转一次的螺旋路径。沿轴的运动速度由变量linear_speed控制
+
+```c
+theta = (frame_number % 100) * (2 * M_PI / 100);
+path.x = cos(theta);
+path.y = sin(theta);
+path.z = theta*linear_speed
+```
+
+**· ANIMATING SOLID TEXTURES**
+
+本节将展示前两种动画方法如何用于固体纹理。应用这些技术的颜色固体纹理将首先讨论，然后是固体纹理透明度。一个大理石程序将被用作彩色固体纹理动画的例子。以下简单的大理石程序是基于Perlin的大理石函数（Perlin 1985）。交互式硬件加速版本的大理石描述在第10章。
+
+```c
+rgb_td marble(xyz_td pnt)
+{
+    float y;
+    y = pnt.y + 3.0*turbulence(pnt, .0125);
+    y = sin(y*M_PI);
+    return (marble_color(y));
+}
+
+rgb_td marble_color(float x)
+{
+    rgb_td clr;
+    x = sqrt(x+1.0)*.7071;
+    clr.g = .30 + .8*x;
+    x=sqrt(x);
+    clr.r = .30 + .6*x;
+    clr.b = .60 + .4*x;
+    return (clr);
+}
+```
+
+这个程序对该点的湍流应用一个正弦函数。然后将结果值映射到颜色。这个过程的结果如图8.2所示(右下)。
+
+<img src="img/procedure_approach_learning_1/image-20200913014048526.png" alt="image-20200913014048526" style="zoom:67%;" />
+
+**· Marble Forming**
+
+前两种动画方法对这个函数的应用具有非常不同的效果。当使用第一种方法时，随着时间的推移改变固体空间，可以从带状岩石形成大理石。大理石是由不同带的岩石湍流混合而成的。为了模拟这一过程，最初没有湍流添加到点；因此，正弦函数决定了颜色。基于正弦函数的颜色产生带状材料。随着帧数的增加，加在该点上的湍流量增加，使条带变形为大理石脉状图案。得到的过程如下：
+
+```c
+rgb_td marble_forming(xyz_td pnt, int frame_num, int start_frame, int end_frame)
+{
+    float x, turb_percent, displacement;
+    if(frame_num < start_frame)
+    { 
+        turb_percent = 0;
+    	displacement = 0;
+    }
+    else if (frame_num >= end_frame)
+    { 
+        turb_percent = 1;
+    	displacement = 3;
+    }
+    else
+    { 
+        turb_percent = ((float)(frame_num-start_frame))/(end_frame-start_frame);
+    	displacement = 3 * turb_percent;
+    }
+    x = pnt.x + turb_percent * 3.0 * turbulence(pnt, .0125) - displacement;
+    x = sin( x * M_PI );
+    return (marble_color(x));
+}
+```
+
+这个过程中的*displacement*值用于停止整个纹理的移动。没有*displacement*值，整个带状图案水平移动到图像的左边，而不是在适当的地方形成脉络。
+
+这个过程产生了预期的效果，但结果的真实性可以通过一些小的变化来增加。首先，加速和减速湍流的速度会使运动更自然。其次，可以通过改变大理石的颜色来模拟变形前和变形过程中的加热，以及变形后的冷却。大理石颜色与“发光”大理石颜色混合，以模拟加热和冷却。(尽管这在物理上可能不准确，但它产生了良好的效果 )。
+
+**· Marble Moving**
+
+通过第二种动画方法可以实现不同的效果，即通过实体空间移动点。任何路径都可以通过大理石空间移动。一个简单而明显的选择是一条线性路径。另一种选择是使用湍流路径，它可以在材料中产生非常缥缈的图案。下面的过程使用另一种路径选择。这个过程在评估湍流函数之前，沿着水平螺旋路径移动点，产生大理石图案穿过物体的效果。螺旋路径提供了比线性路径更有趣的结果，但不会像使用通过湍流空间的湍流路径那样改变一般的大理石图案。这种技术可以用来确定大理石的哪一部分“切割”对象，以获得最令人愉快的脉型图案。(实际上，你是在一个三维的大理石空间中移动物体。)
+
+```c
+rgb_td moving_marble(xyz_td pnt, int frame_num)
+{
+    float x, tmp, tmp2;
+    static float down, theta, sin_theta, cos_theta;
+    xyz_td hel_path, direction;
+    static int calcd = 1;
+    if(calcd)
+    { 
+        theta = (frame_num % SWIRL_FRAMES) * SWIRL_AMOUNT;//旋动
+        cos_theta = RAD1 * cos(theta) + 0.5;
+        sin_theta = RAD2 * sin(theta) - 2.0;
+        down = (float)frame_num * DOWN_AMOUNT + 2.0;
+        calcd = 0;
+    }
+    tmp = fast_noise(pnt); // add some randomness
+    tmp2 = tmp * 1.75;
+    // calculate the helical path
+    hel_path.y = cos_theta + tmp;
+    hel_path.x = (-down) + tmp2;
+    hel_path.z = sin_theta - tmp2;
+    XYZ_ADD(direction, pnt, hel_path);
+    x = pnt.y + 3.0 * turbulence(direction, .0125);
+    x = sin( x * M_PI );
+    return (marble_color(x));
+}
+```
+
+在这个过程中，*SWIRL_FRAMES* 和 *SWIRL_AMOUNT* 决定了螺旋路径一次完整旋转所需的帧数。通过选择*SWIRL_FRAMES* = 126 和*SWIRL_AMOUNT* = $2\pi/126$，路径每126帧旋转一次。*DOWN_AMOUNT* 控制沿螺旋路径向下运动的速度。对于单位大小的对象，向下移动的合理速度是使用 *DOWN_AMOUNT* = 0.0095。*RAD1* 和 *RAD2* 是螺旋路径的y和z半径。
+
+**· Animating Solid Textured Transparency**
+
+本节介绍了第二种实体空间动画技术的使用，通过实体空间移动点，用于动画实体纹理透明。这个动画技术是我最初制作气体动画时使用的，现在仍然是我制作气体的主要技术。这种技术应用于实体纹理透明的结果可以在Ebert, Boyer和Roble(1989)中看到。下面给出的fog过程的动画方法与前面的moving_marble过程类似。它产生的雾通过一个物体的表面移动，可以作为一个基于表面的方法来模拟雾或云。同样在这个过程中，一个向下的螺旋路径被用于通过空间的运动，这产生了一个向上的漩涡的气体运动。
+
+```c++
+void fog(xyz_td pnt, float *transp, int frame_num)
+{
+    float tmp;
+    xyz_td direction,cyl;
+    double theta;
+    pnt.x += 2.0 +turbulence(pnt, .1);
+    tmp = noise_it(pnt);
+    pnt.y += 4+tmp; pnt.z += -2 - tmp;
+    theta =(frame_num%SWIRL_FRAMES)*SWIRL_AMOUNT;
+    cyl.x =RAD1 * cos(theta); 
+    cyl.z =RAD2 * sin(theta);
+    direction.x = pnt.x + cyl.x;
+    direction.y = pnt.y - frame_num*DOWN_AMOUNT;
+    direction.z = pnt.z + cyl.z;
+    *transp = turbulence(direction, .015);
+    *transp = (1.0 -(*transp)*(*transp)*.275);
+    *transp =(*transp)*(*transp)*(*transp);
+}
+```
+
+**ANIMATION OF GASEOUS VOLUMES**
+
+如前一节所述，动画技术2，通过实体空间移动点，是我用于动画气体的技术。此技术将在本节的所有示例中使用。移动每个固定的三维屏幕空间点沿路径经过时间通过固体空间评估湍流函数创建气体运动。首先，将每个三维屏幕空间点反向映射回世界空间。其次，它通过使用简单的仿射变换从世界空间映射到气体和湍流空间。最后，随着时间的推移，它通过湍流空间产生气体的运动。因此，路径方向会产生相反的视觉效果。例如，一个向下的路径应用到屏幕空间点将导致气体上升
+
+这种气体动画技术可以被认为是粒子系统的逆，因为三维屏幕空间中的每个点都是通过气体空间移动，以查看气体的哪一部分占据了屏幕空间的当前位置。与粒子系统相比，这种方法的主要优点是不需要非常大的粒子几何数据库来获得真实的图像。复杂性总是由屏幕空间点的数量控制，其中气体是潜在可见的。
+
+一些有趣的动画效果可以通过使用螺旋路径通过实体空间的运动来实现。这些螺旋路径效应将首先被描述，然后使用三维表格来控制气体运动。最后，为创建气体动画的几个额外的原语将被呈现。
+
+**Helical Path Effects**
+
+螺旋路径可以用来创建几种不同的气体动画效果。在本章中，将介绍三个螺旋路径效应的例子:从茶杯上升的蒸汽，滚动的雾，和上升的烟柱。
+
+**· Steam Rising from a Teacup**
+
+在前一章中，描述了产生蒸汽从茶杯上升的平静的图像程序。这个程序可以修改，以产生令人信服的动画蒸汽上升从茶杯通过增加螺旋路径的运动。
+
+体积中的每一点都沿着螺旋路径向下移动，从而产生蒸汽上升并向相反的方向旋转。需要修改的地方如下这个动画技术与在moving_marble过程中使用的技术相同。
+
+```c++
+void steam_moving(xyz_td pnt, xyz_td pnt_world, float *density,
+float *parms, vol_td vol)
+{
+    float noise_amt,turb, dist_sq, density_max, offset2, theta, dist;
+    static float pow_table[POW_TABLE_SIZE], ramp[RAMP_SIZE],
+    offset[OFFSET_SIZE];
+    extern int frame_num;
+    xyz_td direction, diff;
+    int i, indx;
+    static int calcd=1;
+    static float down, cos_theta, sin_theta;
+    if(calcd)
+    { 
+        calcd=0;
+        // determine how to move point through space(helical path)
+        theta =(frame_num%SWIRL_FRAMES)*SWIRL;
+        down = (float)frame_num*DOWN*3.0 +4.0;
+        cos_theta = RAD1*cos(theta) +2.0;
+        sin_theta = RAD2*sin(theta) -2.0;
+        for(i=POW_TABLE_SIZE-1; i>=0; i--)
+        	pow_table[i] =(float)pow(((double)(i))/(POW_TABLE_SIZE-1)*parms[1]* 2.0,(double)parms[2]);
+        make_tables(ramp);
+    }
+    // move the point along the helical path
+    noise_amt = fast_noise(pnt);
+    direction.x = pnt.x + cos_theta + noise_amt;
+    direction.y = pnt.y - down + noise_amt;
+    direction.z = pnt.z +sin_theta + noise_amt;
+    turb =fast_turbulence(direction);
+    *density = pow_table[(int)(turb*0.5*(POW_TABLE_SIZE-1))];
+    // determine distance from center of the slab ^2.
+    XYZ_SUB(diff,vol.shape.center, pnt_world);
+    dist_sq = DOT_XYZ(diff,diff) ;
+    density_max = dist_sq*vol.shape.inv_rad_sq.y;
+    indx = (int)((pnt.x+pnt.y+pnt.z)*100) & (OFFSET_SIZE -1);
+    density_max += parms[3]*offset[indx];
+    if(density_max >= .25) // ramp off if > 25% from center
+    { // get table index 0:RAMP_SIZE-1
+        i = (density_max -.25)*4/3*RAMP_SIZE;
+        i=MIN(i,RAMP_SIZE-1);
+        density_max = ramp[i];
+        *density *=density_max;
+    }
+    dist = pnt_world.y - vol.shape.center.y;
+    if(dist > 0.0)
+    { 
+        dist = (dist +offset[indx]*.1)*vol.shape.inv_rad.y;
+        if(dist > .05)
+        { 
+            offset2 = (dist -.05)*1.111111;
+            offset2 = 1 - (exp(offset2)-1.0)71.718282;
+            offset2*=parms[1];
+            *density *= offset2;
+        }
+    }
+}
+```
+
+这个过程在气体中创建向上的旋转运动，它在每个*SWIRL_FRAMES*帧中旋转360度。噪声应用到路径，使它看起来更随机。参数RAD1和RAD2决定了旋流路径的椭圆形状。在这个程序中的其他变量有：螺旋路径的角度旋转（theta），帧数（frame_num），转动角的余弦值(cos_theta)，转动角的正弦值(sin_theta)，沿螺旋轴的移动量(down)，添加到路径的噪音量(noise_amt)，沿着路径运动后的新位置点(direction)。
+
+通过气体空间的向下螺旋路径产生了气体上升并向相反方向旋转的效果。
+
+为了更真实的蒸汽运动，模拟气流是有帮助的。在螺旋路径上增加湍流可以近似于此，其中增加的湍流量与茶杯上方的高度成正比。(假设表面没有湍流)
+
+**· Fog Animation**
+
+螺旋路径效果的下一个例子是创建滚动雾，在这个动画中，一个水平的螺旋路径将被用于创建场景右边的雾的漩涡运动。通过检查下面的volume_fog_animation过程，可以清楚地看到，这个过程使用了与前面的steam_moving过程相同的动画技术：在计算湍流函数之前，沿着螺旋路径移动每个点。湍流函数返回的值再乘以密度缩放因子parms[1]，并取parms[2]的幂次。与前面的步骤一样，预计算出密度值提升的幂次方表来加速程序计算。在Ebert and Parent(1990)中可以找到关于使用螺旋路径制作雾动画的更完整的描述。
+
+**· Smoke Rising**
+
+螺旋路径效果的最后一个例子是前面给出的smoke_stream程序的动画，用于创建单个柱状烟雾。采用两种不同的螺旋路径产生旋流烟柱。这个smoke_stream程序已经使用了一个螺旋路径来置换每个点，以获得更令人信服的烟柱。现在我们将修改这个螺旋路径，使其基于帧数向下螺旋路径，创建上升的烟柱。第二个螺旋路径实际上会取代圆柱体的中心点，产生一个旋转的烟雾圆柱体(而不是第7章中使用的垂直圆柱体)。这第二个螺旋路径将以不同于第一个螺旋的速度旋转。这个过程可以使用相同的输入参数值。下面是这些修改的结果。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
