@@ -4,7 +4,7 @@
         MathJax.Hub.Config({
             tex2jax: {
             skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
-            inlineMath: [['$','$']]
+            inlineMath: [['$','$'],["\\(","\\)"]]
             }
         });
     </script>
@@ -314,7 +314,18 @@ int main(...)
 
 Whitted提出利用这些定律计算光线在反射或透明表面上的反射和折射方向，并沿着这些光线的路径找出它们将相交的物体的颜色。在这些反射光线和折射光线(在CG中，我们称之为次级光线，以区别于初级光线或照相机光线)的交点上可能会发生三种情况:
 
-- 案例1:如果在交点处的表面是不透明的和漫反射的，我们所需要做的就是使用一个照明模型，例如Phong模型，来计算交点处物体的颜色。这个过程还包括向场景中每盏灯的方向投射光线，以确定该点是否在阴影中。这些射线被称为阴影射线。
+- <head>
+      <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+      <script type="text/x-mathjax-config">
+          MathJax.Hub.Config({
+              tex2jax: {
+              skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+              inlineMath: [['$','$'],["\\(","\\)"]]
+              }
+          });
+      </script>
+  </head>
+
 - 情况2:如果表面是一个像镜子一样的表面，我们只需在交点追踪另一条反射光
 - 情况3:如果表面是透明的，我们在交点投射另一条反射光线和一条折射光线。
 

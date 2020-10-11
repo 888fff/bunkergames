@@ -4,7 +4,7 @@
         MathJax.Hub.Config({
             tex2jax: {
             skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
-            inlineMath: [['$','$']]
+            inlineMath: [['$','$'],["\\(","\\)"]]
             }
         });
     </script>
@@ -268,7 +268,17 @@ $$
 
 ##### 案例1：（这里省略掉一些废话）
 
-当一个实验的结果有不同的概率时，概率分布看起来更有趣。让我们研究一个这样分布的例子。还记得我们在前一章中描述的实验吗，我们有10张卡片，其中3张是0号，5张是1号，2张是2号。如果你把这些牌放在一个盒子里，摇动盒子等等，你就会(希望)同意盒子里的每一张牌都有均等的可能被随机拿起。假设样本$S=\{0,0,0,1,1,1,1,1, 1,1,2,2\}$(集合中的顺序无关紧要，数字可以以完全不同的顺序表示)，那么集合中的每个结果的概率都是1/10。在概率论中，当我们考虑得到一个或另一个结果的概率时，得到这两个结果的概率是它们概率的和(我们将在下一章中研究概率的性质)。这就是所谓的**加法规则(addition rule)**。换句话说，如果你感兴趣的概率是多少得到2或5掷骰子,这个概率是得到的和2(也就是1/6)和5(也是1/6)的概率,这是2/6。应用到我们的卡片例子中，得到一张标签为0的卡片的概率是标签为0的集合中每张卡片的概率的和，得到一张1的概率是标签为1的集合中每张卡片的概率的和，等等。如果我们把样本空间缩小到基本事件的空间，那么我们得到S={0,1,2}，得到0 1或2的概率分别是3/10 5/10和2/10。如果我们现在把这些概率画成结果的函数，我们会得到下面更有趣的图表：
+<head>
+    <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+            tex2jax: {
+            skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+            inlineMath: [['$','$'],["\\(","\\)"] ]
+            }
+        });
+    </script>
+</head>
 
 <img src="img/Mathematical Foundations of Monte Carlo Methods/prob2.png" style="zoom:67%;" />
 
