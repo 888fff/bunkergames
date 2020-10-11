@@ -1191,11 +1191,194 @@ float *parms, vol_td vol)
 
 螺旋路径效果的最后一个例子是前面给出的smoke_stream程序的动画，用于创建单个柱状烟雾。采用两种不同的螺旋路径产生旋流烟柱。这个smoke_stream程序已经使用了一个螺旋路径来置换每个点，以获得更令人信服的烟柱。现在我们将修改这个螺旋路径，使其基于帧数向下螺旋路径，创建上升的烟柱。第二个螺旋路径实际上会取代圆柱体的中心点，产生一个旋转的烟雾圆柱体(而不是第7章中使用的垂直圆柱体)。这第二个螺旋路径将以不同于第一个螺旋的速度旋转。这个过程可以使用相同的输入参数值。下面是这些修改的结果。
 
+**· Volumetric Marble Formation**
+
+另一个例子的超纹理动画将探索：模拟大理石的形成。在前面讨论的固体纹理动画中加入超纹理动画将大大提高动画的真实性。
+
+一种方法是根据大理石的颜色来改变密度。最初，没有湍流将添加到“流体”：密度值将以类似大理石颜色值的方式确定，给不同带宽以不同的密度。就像在早期的marble_forming过程中一样，湍流将随着时间的推移而添加。在以下过程中，这些改变是通过从前面描述的固体纹理函数marble_forming返回的湍流量turb_amount来实现的。密度是基于固体纹理函数的湍流量。然后用幂函数来塑造这个形状，类似于前面给出的气体函数。最后，使用Perlin的一个技巧(减去0.5，乘以一个标量缩放，加上0.5，并将结果限制在0.2到1.0的范围内)可以更快地形成一个坚硬的表面(Perlin 1992)。这个函数的结果如图8.12所示。
+
+<img src="img/procedure_approach_learning_1/image-20200921202322899.png" alt="image-20200921202322899" style="zoom:50%;" />
 
 
 
+```c
+//
+// parms[1] = maximum density value: density scaling factor
+// parms[2] = exponent for density scaling
+// parms[3] = x resolution for Perlin’s trick (0–640)
+// parms[8] = 1/radius of fuzzy area for Perlin’s trick(> 1.0)
+//
+void molten_marble(xyz_td pnt, float *density, float *parms,vol_td vol)
+{
+    float parms_scalar, turb_amount;
+    turb_amount = solid_txt(pnt,vol);
+    *density = (pow(turb_amount, parms[2]) )*0.35 +0.65;
+    // Introduce harder surface more quickly.
+    // parms[3] multiplied by 1/640
+    *density *=parms[l];
+    parms_scalar = (parms[3]*.0015625)*parms[8];
+    *density= (*density-0.5)*parms_scalar +0.5;
+    *density = MAX(0.2, MIN(1.0,*density));
+}
+```
 
+**PARTICLE SYSTEMS: ANOTHER PROCEDURAL ANIMATION TECHNIQUE**
 
+正如前面提到的，粒子系统不同于本书中介绍的其他程序技术，因为它们抽象的控制在对象的动画和规则。Reeves在1983年首次将粒子系统应用到计算机图形中，用于电影《星际迷航2:可汗之怒》中的火墙建模。由于粒子系统是一种体积建模技术，它们最常用来表示体积自然现象，如火、水、云、雪和雨(Reeves 1983)。结构化粒子系统，粒子系统的扩展，也被用于建模草和树 (Reeves and Blau 1985)。
+
+粒子系统是由一系列几何粒子和控制它们的产生、运动和死亡的算法定义的。每个几何粒子都有一些属性，包括它的初始位置、速度、大小、颜色、透明度、形状和寿命。
+
+为创建粒子系统对象的动画，在每个时间步长执行以下操作（Reeves 1983）
+
+1. 生成新的粒子并分配它们的属性。
+2. 已经存在于系统中超过其生命周期的粒子被移除。
+3. 每个剩余的粒子由粒子系统算法根据它们各自的属性进行移动和转换。
+4. 这些粒子被渲染，使用特殊用途的渲染算法，以产生粒子系统的图像。
+
+粒子的创建，死亡，移动被随机过程控制着，创建时候的一些参数使得其复杂且真实。粒子创建的过程被一些定义的参数所控制，要么是每个时间步长内生成的平均粒子数目和它的变化，要么是每个时间步长内在单位屏幕区域内生成的平均粒子数和它的变化。这个值也可以在时间内被改变。这个真实的粒子数目创建是由随机决定的，如遵循：平均值+变化 ，或平均值-变化。初始的颜色，速度，大小和透明度也是由“平均值和变化量”这种的随机决定。粒子系统初始的形状
+
+------
+
+###### VOLUMETRIC CLOUD MODELING WITH IMPLICIT FUNCTIONS
+
+建模云是一个非常困难的任务，因为他们复杂，无定形的结构，因为甚至是一个未经训练的眼睛也可以判断一个云模型的真实性。它们无处不在的特性使它们成为建模和动画的重要任务。在图9.1中可以看到云广泛美丽的几个例子。本章介绍了云的重要视觉和物理特性以及云的重要渲染议题。下面将介绍之前的云建模和动画方法，以及最近的交互式云建模方法。最后，本章描述我的体积云建模和动画程序方法，允许容易、自然的云的规范和动画，提供了灵活性，包括尽可能多的物理或艺术所需的模型，从而减轻用户详细的几何规格，并产生实际的体积云模型。该技术结合了体积过程建模的灵活性、基于原语（primitive-based ）的隐式函数(meta-balls, blobs)的平滑混合和易于控制，从而创建了一种强大的新建模技术。该技术还演示了基于原语的隐式函数在建模半透明体积对象方面的优势。在第10章中，我们将探索这种云建模方法如何适用于实时绘制。
+
+**CLOUD BASICS**
+
+云是由悬浮在空气中的可见冰晶和/或水滴构成的，这取决于云的高度和空气的温度。云是由空气上升，将空气中的水蒸气冷却到饱和点，然后在大气中凝结成小颗粒而形成的。可见的凝结水蒸气形成云(University of Illinois 2002)。云的形状取决于迫使空气上升或形成气泡的过程、云形成的高度以及各种其他条件(University of Illinois 2002)。这些空气抬升力包括对流、辐合、前缘抬升、山脉抬升（称为地形抬升）和开尔文-亥姆霍兹剪切。当垂直风切变时，就会出现开尔文-亥姆霍兹剪切(巨浪)，并产生类似水波或涟漪的云。一些资料提供了关于云及其识别的很好的介绍（University of Illinois 2002; Tricker 1970; Cotton and Anthes 1989; Houze 1993）。
+
+当考虑云的高度时，在20,000英尺以上形成的云(如卷云、卷层云)，由于气温较低，在外观上往往很薄，呈缕缕状，主要由冰晶组成。在6500英尺到23000英尺之间形成的云(例如高积云)主要是由水滴组成，外观上是一团团小而蓬松的云，有时呈波浪状。在6500英尺以下形成的云(如层云、层积云)，同样主要由水滴组成，并具有大云层的外观。最典型的云类型是蓬松的积云。积云通常是由对流或锋面上升形成的，它的垂直高度可以很小，也可以由强烈的对流形成巨大的垂直塔(积雨云)。
+
+云的视觉外观不仅有助于创建更多的自然图像和动画，而且对天气预报也非常重要。天气观测员经过训练，寻找云的视觉外观的关键成分，使他们能够确定无法从天气雷达和其他测量数据收集到的潜在风暴的信息。云有几个容易识别的视觉特征，必须对它们进行建模以产生准确的图像和动画。首先，云有一个体积变化的无定形结构，有许多不同尺度的细节。其次，云的形成通常是由漩涡、气泡、湍流过程造成的，这些过程产生了特有的云模式及其随时间的演化。最后，他们有几个照明/阴影特征，必须准确地渲染，以获得令人信服的图像。云是由吸收、散射和反射光线的小冰和水滴组成的三维介质。
+
+云的光照模式分为低反照率模式和高反照率模式。低反照率模型假设二次散射效应可以忽略，而高反照率光照模型计算二次和高阶散射效应。对于光学上较厚的云，如积云、层云和积雨云，二次散射效应显著，高反照率照度模型(e.g., Blinn 1982a; Kajiya and Von Herzen 1984; Rushmeier and Torrance 1987; Max 1994; Nishita, Nakamae, and Dobashi 1996)。实现低反照率照明算法的详细描述可以在几个来源中找到(Kajiya and Von Herzen 1984; Ebert and Parent 1990)。
+
+对波长依赖散射的模拟对于为日出和日落场景创建正确的大气扩散效果也很重要(例如，图9.4和9.5渲染了日落光照下的云)。云的自阴影和云在景观上的阴影对创建真实的云场景和景观图像也很重要。正确的云阴影需要体积阴影技术来创建准确的图像，当使用体积射线跟踪时，这可能是非常昂贵的。正如在第7章中提到的，一个更快的替代方法是使用体积阴影表(Kajiya and Von Herzen 1984; Ebert and Parent 1990)或基于硬件的3D纹理切片(Kniss, Kindlmann, and Hansen 2002)。
+
+**SURFACE-BASED CLOUD MODELING APPROACHES**
+
+近20年来，在计算机图形学中建模云一直是一个挑战(Dungan 1979)，在云建模方面的主要进展仍然需要在SIGGRAPH Papers Program 中进行介绍(例如，Dobashi et al. 2000)。以前的许多方法使用半透明的表面来产生令人信服的云图像。Voss(1983)提出了用分形合成平行平面模型来生成从远处看到的云图像的想法。Gardner(1984, 1985, 1990)利用傅里叶合成
+
+[^傅里叶合成]: 在这种情况下，不同振幅和周期的余弦和控制纹理透明度
+
+控制大的中空椭球的透明度，制作了非常令人印象深刻的云图像和动画。在他的方法中，大量的椭球集合定义了云的一般形状，而傅里叶合成程序生成透明纹理并创建云的细节。Kluyskens(2002)在Alias/Wavefront的Maya动画系统中使用了类似的方法来生成云。他使用随机的、重叠的球体来定义一般的云形状。固体纹理“云纹理”然后被用来给云着色和控制球体的透明度。最后，靠近边缘的球体的透明度增加，这样定义的球体形状就不明显了。通过使用OpenGL扩展和调整透明度计算，使用减法混合模式使硬件实现更容易，Gardner的方法已经被扩展到实时云渲染(Elinas and Stürzlinger 2000)。
+
+对于交互式应用程序，比如游戏，通常使用更简单的云方法。最常见的技术之一是创建一个2D云纹理，纹理映射到场景的天空穹顶上。这些纹理通常使用基于噪声的纹理生成，Pallister(2002)提供了使用多重纹理和硬件混合生成程序云纹理的实时方法。billboards and imposters
+
+[^imposters]: imposters一个纹理映射多边形，预先计算了一个对象的渲染(颜色和alpha)，并映射到简单的几何体上以加速渲染。纹理映射图像需要更新，因为视图的改变，以反映适当的图像，以查看对象从一个新的视点。
+
+的使用使场景与云有了更多的互动。与大多数其他使用多边形表面近似云的方法一样，透明度向云的边缘的高斯或指数衰减是需要的，这样定义的形状就不能被看到。
+
+**VOLUMETRIC CLOUD MODELS**
+
+尽管基于表面的技术可以从远处生成真实的云图像，但这些云模型是中空的，不允许用户无缝地进入、穿行和查看云模型的内部。为了捕捉云的三维结构，必须使用基于体积密度的模型。Kajiya和Von Herzen(1984)在计算机图形学中创建了第一个体积云模型，但结果并不逼真。Stam和Fiume(1995)和Foster和Metaxas(1997)已经建立了令人信服的烟雾和蒸汽的体积模型，但还没有在云的建模方面做大量的工作。
+
+Neyret(1997)最近根据一般物理特征，例如气泡和对流过程，对对流云模型产生了一些初步结果。该模型可能有希望用于模拟对流云;然而，它目前使用表面(大颗粒)来模拟云的结构。将这种方法扩展到体积云建模和动画中，应该会产生非常令人信服的图像和动画。
+
+一些研究人员已经将云的体积建模与基于表面的imposter渲染相结合。Mark Harris最近扩展了imposter技术，以生成复杂、静态云图的实时飞行(Harris and Lastra 2001; Harris 2002)。球形粒子用于生成云的体积密度分布(大约每云200个粒子)，并且一个多重散射光照模型被预先计算用于更快的粒子着色。然后使用喷溅(Westover 1990)渲染粒子，为云创建冒名顶替者。为了让观众正确地穿越环境和实际的云，冒名者需要经常更新。Dobashi等人(2000) 也使用imposter来允许云的快速渲染，这些云是部分基于物理的细胞自动机方法建模的。但是，用于imposters的预先集成限制了这种方法的性能。如前所述，这两种方法实际上都是体积云模型，但是使用纹理映射假体来提高渲染速度。
+
+粒子系统(Reeves 1983)通常用于模拟体积气体，如烟雾，具有非常令人信服的结果和提供容易的动画控制。使用粒子系统进行云建模的困难在于模拟真实云所需的大量粒子。
+
+一些作者在体积云建模中使用了体积呈现隐式函数的思想(Bloomenthal et al. 1997)。在他的多散射照明模型的研究中，Nishita已经使用了大量的辐射隐含作为基本的云模型；然而，这项工作集中在照明效果上，而不是云几何的真实建模(Nishita, Nakamae, and Dobashi 1996)。斯塔姆也使用体积斑点来创建他的烟雾和云的模型（Stam and Fiume 1991, 1993, 1995）。我使用了结合粒子系统和程序细节的体积隐含来模拟体积云的形成和几何形状(Ebert 1997; Ebert and Bedwell 1998)。这种方法使用implicits来提供一种自然的方式来指定和动画云的全局结构，同时使用更传统的过程技术来建模详细的结构。implicits由一个改进的粒子系统控制，该系统包含了云形成动力学的简单模拟，如本章后面所述
+
+**A VOLUMETRIC CLOUD MODELING SYSTEM**
+
+在开发这个新的云建模和动画系统时，我选择了基于最近的高级建模技术和体积程序建模的工作。正如在第一章中提到的，许多先进的几何建模技术，如分形(Peitgen, Jürgens, and Saupe 1992)，隐式曲面(Blinn 1982b; Wyvill, McPheeters, and Wyvill 1986; Nishimura et al. 1985)，基于语法的建模（Smith 1984; Prusinkiewicz and Lindenmayer 1990）和体积程序模型/超纹理（Perlin 1985; Ebert, Musgrave, et al. 1994）使用细节的程序抽象来允许设计师在高水平上控制和动画对象。它们内在的过程特性提供了灵活性、数据增强、细节抽象和易于参数控制。当建模复杂的体积现象(如云)时，这种对细节的抽象和数据的放大是使建模和动画易于处理的必要条件。对于动画师来说，指定和控制云模型的详细三维密度是不现实的。这个系统不使用一个基于物理的方法，因为它是计算禁止和非直观使用许多动画师和建模者。设置和动画正确的物理参数露点，颗粒分布，温度和压力梯度，等等是一个时间消耗，详细的任务。这个模型被开发来允许建模者和动画师在一个更高的层次上工作，并且不受物理定律的限制。
+
+体积过程模型具有过程技术的所有优势，是云建模的自然选择，因为它们是最灵活、最先进的建模技术。由于评估过程以确定对象的密度，任何高级建模技术、简单的物理模拟、数学函数或艺术算法都可以包含在模型中。
+
+体云模型采用云宏观结构和云微观结构两层模型。隐式函数和湍流体积密度分别对它们进行了建模。云模型的基本结构结合了这两种成分来确定云的最终密度。
+
+程序turbulence和noise函数创建云的微观结构，其方式类似于basic_gas函数(见第7章)。这允许程序模拟自然细节到所需的水平。添加了简单的数学函数，允许对密度分布进行塑形，并控制密度衰减的锐度。
+
+采用隐式函数来模拟云的宏观结构，因为它们易于规范和平滑地混合密度分布。用户只需指定隐式原语的位置、类型和权重，就可以创建整个云形状。任何隐式原语，包括球体、圆柱体、椭球体和隐含骨架，都可以用来建模云的宏观结构。由于这些是作为半透明介质的体积渲染，整个体积场函数被渲染。相反，隐式表面建模只使用字段的一小部分值来创建对象。隐式密度函数是基于原语的密度函数:它们由求和、加权、参数化、原始隐式曲面定义。以半径r为圆心的球面的隐式公式的一个简单例子如下:
+$$
+F(x,y,z):(x − center.x)^2 + (y − center.y)^2 + (z − center.z)^2 − r^2 = 0
+$$
+隐函数的真正强大之处在于它可以平滑地混合来自不同原始源的密度场。我使用Wyvill的标准立方函数(Wyvill,McPheeters, and Wyvill 1986)作为隐式基元的密度(混合)函数:
+$$
+F_{cup}(r) = -\frac{4r^6}{9R^6}+\frac{17r^4}{9R^4}-\frac{22r^2}{9R^2}+1
+$$
+在上式中，r是到原(primitive)的距离，这个密度函数是距离平方的立方，它的值范围从 r = 0时的 1(在原语中)到r = R 时的 0。这个密度函数有几个优点。首先，它的值迅速下降到零(在距离R处)，减少了在创建最终表面时必须考虑的原语数量。
+
+其次，它在r = 0和r = R处导数为零，并且在轮廓值0.5处对称，提供了基元之间的平滑过渡。最后的隐式密度值为各原语密度场值的加权和：
+
+$$
+Density_{\ implicit} (p) = \sum_i(w_iF_{cup_i}(p-q))
+$$
+其中$w_i$是第$i$个原语的权值，$q$是$i$元素上离$p$最近的点。
+
+为了创建非实体隐式原语，在计算混合函数之前会程序地改变点的位置。这种改变可以是过程和隐函数的产物，或者是隐函数空间的扭曲。这些技术被组合成一个简单的云模型：
+
+```C
+volumetric_procedural_implicit_function(pnt, blend%, pixel_size)
+    perturbed_point = procedurally alter pnt using noise and turbulence
+    density1 = implicit_function(perturbed_point)
+    density2 = turbulence(pnt, pixel_size)
+    blend = blend% * density1 +(1 - blend%) * density2
+    density = shape resulting density based on user controls forwispiness and denseness (e.g., use pow and exponential function)
+    return(density)
+```
+
+隐式原语的密度与纯湍流密度结合使用用户指定的blend%(60%到80%可以得到良好的结果)。两种密度的混合允许创建完全由隐函数密度决定到完全由程序湍流函数决定的云。当云完全由隐函数决定时，它们看起来更像棉球。程序上的改变和扰动是赋予它们自然外观的原因。
+
+**VOLUMETRIC CLOUD RENDERING**
+
+本章着重于使用这些技术建模和动画现实的云。云的体渲染没有详细讨论。关于本书中用来制作云图像的体积渲染系统的描述，请参见第7章。任何体积渲染系统都可以与这些体积云程序一起使用；然而，为了获得真实的效果，系统应该使用大气衰减来累积密度，并且应该使用基于物理的照明算法。对于精确的积云图像，高反照率照明算法(e.g., Max 1994; Nishita, Nakamae, and Dobashi 1996)是需要的。第10章还展示了如何使用3D纹理映射硬件以交互速率渲染这些技术。
+
+**· Cumulus Cloud Models**
+
+积云在自然界中非常常见，可以很容易地用球面或椭圆隐式原语模拟积云。图9.2显示了使用9个隐式球体来模拟积云所能得到的结果类型。动画师/建模者只是简单地定位隐式球体来生成一般的云结构。程序修改然后改变密度分布来创建详细的云雪瑕疵。在图9.2和9.3中创建云的算法如下:
+
+```c
+void cumulus(xyz_td pnt, float *density, float *parms, xyz_td pnt_w, vol_td vol)
+{
+    float new_turbulence(); 	// my turbulence function
+    float peachey_noise(); 		// Darwyn Peachey’s noise function
+    float metaball_evaluate(); // function for evaluating
+    // meta-ball primitives
+    float mdens, 			// meta-ball density value
+    	  turb, turb_amount // turbulence amount
+    	  peach; 			// Peachey noise value
+    	  xyz_td path; 		// path for swirling the point
+    extern int frame_num;
+    static int ncalcd = 1;
+    static float sin_theta_cloud, cos_theta_cloud, theta,
+    path_x, path_y, path_z, scalar_x, scalar_y, scalar_z;
+    // calculate values that only depend on the frame number
+    // once per frame
+    if(ncalcd)
+    {
+        ncalcd = 0;
+        // create gentle swirling in the cloud
+        theta = (frame_num % 600)*.01047196; // swirling effect
+        cos_theta_cloud = cos(theta);
+        sin_theta_cloud = sin(theta);
+        path_x = sin_theta_cloud * .005 * frame_num;
+        path_y = .01215 * (float)frame_num;
+        path_z = sin_theta_cloud * .0035 * frame_num;
+        scalar_x = ( .5 + (float)frame_num * 0.010);
+        scalar_z = (float)frame_num *.0073;
+    }
+    // Add some noise to the point’s location
+    peach = peachey_noise(pnt); // Use Darwyn Peachey’s noise
+    pnt.x -= path_x - peach*scalar_x;
+    pnt.y = pnt.y - path_y +.5*peach;
+    pnt.z += path_z - peach*scalar_z;
+    // Perturb the location of the point before evaluating the
+    // implicit primitives.
+    turb = fast_turbulence(pnt);
+    turb_amount = parms[4]*turb;
+    pnt_w.x += turb_amount;
+    pnt_w.y -= turb_amount;
+    pnt_w.z += turb_amount;
+    mdens = (float)metaball_evaluate((double)pnt_w.x,(double)pnt_w.y, (double)pnt_w.z, vol.metaball));
+    *density = parms[1]*(parms[3]*mdens + (1.0 - parms[3])*turb*mdens);
+    *density = pow(*density,(double)parms[2]);
+}
+```
+
+*parms[3]*是隐式(元球)密度与湍流密度与隐式密度的乘积的混合函数值。这种混合方法确保整个云密度是隐式字段值的产物，防止云块出现在定义的原语之外。使用一个大型的*parms[3]*生成的云主要是由它们的隐式原语定义的，因此，“平滑”和较少的湍流。*parms[1]*是一个密度缩放因子，*parms[2]*是pow()函数的指数，而*parms[4]*控制在计算隐式原语之前替换点时使用的湍流量。对于好的积云图像，有用的值如下:*0.2 < parms[1] < 0.4, parms[2] = 0.5, parms[3] = 0.4, parms[4] = 0.7*。
 
 
 

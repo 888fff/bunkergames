@@ -26,6 +26,15 @@ email:410146465@qq.com
 
   based normal distribution to set the number and probability of attacking in roguelike game.[2020-4-14]
 
+- #### [蒙特卡洛和概率与统计(翻译)[2020-10-11]](Mathematical Foundations of Monte Carlo Methods.md)
+
+- #### [RayMarching 学习(翻译)[2020-10-11]](RayMarching.md)
+
+- #### [RayTracing 学习(翻译)[2020-10-11]](RayTracing.md)
+
+  
+
+
 ### 喜爱的东西
 
 - #### [剧本杀的思考](jbs_thinking.md)
