@@ -1235,7 +1235,7 @@ $\bar X = \dfrac{\sum_{i=1}^n X_i}{n}.$
 
 总体的方差和样本均值的方差都可以用公式计算:
 $$
-\sigma^2 = { {\sum_{i=1}^N {(x_i - \mu)^2}}\over N} = {{\sum_{i=1}^N x_i}\over N} - \mu^2,
+\sigma^2 = { {\sum_{i=1}^N (x_i - \mu)^2}\over N} = {{\sum_{i=1}^N x_i}\over N} - \mu^2,
 $$
 
 $$
