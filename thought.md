@@ -12,7 +12,7 @@
 
 ## Thought 
 
-2020-11-4 written by wwh            *[[pdf 下载]]("pdf/thought.pdf")*
+2020-11-4 written by wwh            *[[pdf 下载]](pdf/thought.pdf)*
 
 ##### 论文中心
 
