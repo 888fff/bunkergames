@@ -40,6 +40,10 @@ email:410146465@qq.com
 - #### [剧本杀的思考](jbs_thinking.md)
 
   The way of my thinking about Broad Killing Game.[2019-3-4]
+  
+- #### [王者荣耀ELO闲扯](Discuss_About_ELO.md)
+
+  discuss about ELO system of Arena of Valor
 
 ### 我们的游戏
 

@@ -91,6 +91,8 @@ Felnhofer等人报告说，VEs在五种不同的虚拟公园场景中准确地�
 
 在分析非参数主观数据时，我们使用Friedman’s ANOVA。对于客观数据(HR和GSR)，我们使用重复测量ANOVAs。表1给出了PANAS和SAM问卷的回答概述。总的来说，我们发现，与真实情况相比，稍微高一些的人力资源反馈(+15%)会引起更多的兴奋、恐惧、紧张和恐惧，而稍微低一些的心率(-15%)会使参与者对VE更感兴趣。但其影响主要体现在主观反应上，生理反应基本不受不同HR反馈的影响。
 
+![image-20201216212226476](img/Effects of Manipulating Physiological Feedback in Immersive Virtual Environments/image-20201216212226476.png)
+
 ##### Analysis of PANAS and Individual Emotions
 
 我们注意到，在所有条件下，积极的影响都比消极的影响更强。然而，在积极影响(p=0.17)和消极影响(p=0.18)两种情况之间没有显著差异。我们注意到，在使用PANAS测量的20种不同的情绪和感受中，有5种个体的情绪受到心率操纵的显著影响——兴趣、兴奋、恐惧、紧张和恐惧。有趣的是，这五种情绪显然与我们设计的虚拟场景最相关。
