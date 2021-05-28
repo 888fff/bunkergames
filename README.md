@@ -34,7 +34,7 @@ email:410146465@qq.com
 
 - #### [5-18~5-24 英文慕课调研[2021-5-26]](ECG_review/5-18~5-24_MoocResearch.md)
 
-  
+- #### [假装对GPUInstancing进行研究[2021-5-28]](ECG_review/GPUInstanceResearch.md)
 
 
 ### 喜爱的东西
