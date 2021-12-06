@@ -8,6 +8,12 @@ email:410146465@qq.com
 
 让我们荡起双桨
 
+### 论文和获奖情况
+
+**温伟航**,薛永晖,韩红雷.恐怖游戏中玩家恐惧程度和体验的分析.传媒学刊,2021年.（第一作者）
+
+**Wen Weihang**, Xue Yonghui, Han Honglei. Scary but Fun A Preliminary Experiment to Explore the Factors that Affect the Experience of Horror Games, Edutainment 2021.（第一作者）
+
 ### 学习心得
 
 - #### [Globe Game Jam 2019](ggj2019.md)
@@ -46,10 +52,6 @@ email:410146465@qq.com
 - #### [王者荣耀ELO闲扯](Discuss_About_ELO.md)
 
   discuss about ELO system of Arena of Valor
-
-### 我们的游戏
-
-- coming soon...
 
 ### 生活感慨
 
