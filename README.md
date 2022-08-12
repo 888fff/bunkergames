@@ -16,9 +16,9 @@ email:410146465@qq.com
 
 ### 实践总结
 
-- #### [虚拟Ubuntu和主机配置](work_doc/虚拟Ubuntu和主机配置.md)
+- #### [虚拟Ubuntu和主机配置[2022-8-12]](work_doc/虚拟Ubuntu和主机配置.md)
 
-- #### [NDI相关翻译](work_doc/NDI相关翻译.md)
+- #### [NDI相关翻译[2022-8-12]](work_doc/NDI相关翻译.md)
 
 ### 学习心得
 
