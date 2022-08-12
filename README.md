@@ -14,6 +14,12 @@ email:410146465@qq.com
 
 **Wen Weihang**, Xue Yonghui, Han Honglei. Scary but Fun A Preliminary Experiment to Explore the Factors that Affect the Experience of Horror Games, Edutainment 2021.（第一作者）
 
+### 实践总结
+
+- #### [虚拟Ubuntu和主机配置](work_doc/虚拟Ubuntu和主机配置.md)
+
+- #### [NDI相关翻译](work_doc/NDI相关翻译.md)
+
 ### 学习心得
 
 - #### [Globe Game Jam 2019](ggj2019.md)
