@@ -251,7 +251,7 @@ const NDIlib_source_t* NDIlib_send_get_source_name(NDIlib_send_instance_t p_inst
 
 返回值的生命周期是直到发送方实例被销毁。
 
-##### ASYNCHRONOUS SENDING
+##### ASYNCHRONOUS SENDING 异步的
 
 使用NDI调用NDIlib_send_send_video_v2_async可以异步发送视频帧。该函数将立即返回，并将与调用异步执行所有所需的操作(包括颜色转换、任何压缩和网络传输)。
 
@@ -783,33 +783,122 @@ DEFINE_GUID(CLSID_NdiSourceFilter, 0x90f86efc, 0x87cf, 0x4097, 0x9f, 0xce, 0xc, 
 
 *NDI://computername/source?audio=false&low_quality=true&force_aspect=1.33333&rgb=true*
 
+### NDI ADVANCED SDK
 
+##### OVERVIEW
 
+本节NDI高级SDK是为希望提供硬件辅助编码或解码的设备制造商设计的。它遵循与NDI SDK相同的API，因此任何经验、示例代码和文档都可以应用于另一个。
 
+重要的是，NDI高级SDK的这一部分提供了对压缩格式的视频数据的直接访问，这样就可以直接发送和接收视频数据。因此，这个SDK也可能用于其他需要或受益于直接与压缩视频数据交互以发送和接收的任务。
 
+目前NDI高级SDK有两种主要用途：
 
+1. 你可以使用NDI压缩(有时被称为“SpeedHQ”)，高性能和高质量的IFrame视频编解码器。这个SDK中提供了用于本机NDI的FPGA压缩器。
 
+   如果您使用的是SpeedHQ压缩，那么您可能还使用了带有ARM核心和可用于实时压缩的FPGA的(SoC)设备。NDI高级SDK提供了Xilinx和Altera FPGA的NDI编码和解码IP核心，以及示例FPGA项目和参考c++应用程序，包括完整的源代码。
 
+   为了帮助您入门，提供了几个标准开发套件的预构建的可引导的uSD驱动器映像。假设设备有足够的内存带宽(推荐使用多组RAM)，提供的FPGA核心可以在相对适中的FPGA设计上轻松地实时编码4K视频；在最新一代SoC系统上，如果提供足够的网络带宽，它可以轻松编码一个或多个8K流。
 
+2. 如果您正在使用已经拥有可用硬件压缩器的设备进行开发，则可以使用H.264或H.265来处理视频和AAC音频。
 
+因为许多高级SDK系统需要定制工具链，所以NewTek可以提供专门为您的特定系统构建的SDK的编译版本。如果您有这样的要求，请发邮件至sdk@ndi.tv 【官方开始要吃饭了！！】
 
+##### CONFIGURATION FILES
 
+NDI的所有默认设置都是通过配置文件控制的。这个文件位于$HOME/.ndi/ndiconfig.v1.json。它包含多播和单播发送的设置以及供应商信息。这里指定了您的供应商ID，必须在NewTek注册，以便启用压缩数据传递。
 
+默认情况下，配置文件将自动从磁盘加载，并使用这些设置。如果您希望这样工作，您可以简单地重启您的应用程序，当设备上的配置设置被更改，设置将被更新。
 
+另外，NDI创建函数可以以这个配置文件的字符串表示形式传递，允许您通过在运行时重新创建它们来更改发送方和接收方。
 
+在创建设备时可以对p_config_json进行设置，以允许传入配置文件的内存版本。下面的示例展示了如何设置p_config_json(如果这是您指定配置的首选方法)
 
+```json
+const char *p_config_json ="{"
+ "\"ndi\": {"
+"\"vendor\": {"
+ "\"name\": \"CoolCo, inc.\","
+ "\"id\": \"00000000-0000-0000-0000-000000000000\""
+ "}"
+ "}"
+"}";
 
+```
 
+为任何发送者、查找者和接收者指定每个连接设置的能力是一个非常强大的能力，因为它允许每个连接在每次使用中完全定制，例如，允许为不同的连接类型使用不同的NICs，通过连接手动指定多播，不同的组等等。
 
+配置文件的完整细节在手册的性能和实现细节（*Performance and  Implementation Details*）一节中提供。
 
+##### NDI SDK REVIEW
 
+##### KVM SUPPORT
 
+NDI高级SDK包括通过NDI控制远程KVM支持的设备。这个SDK允许您向标记为支持这些消息的发送方发送键盘、鼠标、剪贴板和触摸消息。这个功能是在一个NDI接收器上实现的，消息从这个接收器发送到发送方以提供KVM控制。
 
+对任何应用程序进行彻底的测试是至关重要的，因为对远程机器的全面支持并不简单，而且有许多边缘情况很难确保解决——例如，对于每一个键盘和鼠标的“按下”，也必须有相应的“释放消息”，否则远程机器将把这解释为“卡住的键”。
 
+本文档介绍了KVM控制所需的所有相关函数。
 
+```c++
+bool NDIlib_recv_kvm_is_supported(NDIlib_recv_instance_t p_instance);
+```
 
+这个函数将告诉您这个接收连接到的当前源是否能够被KVM控制。这个函数返回的值可能会根据远程源当前是否启用了KVM而改变。如果您正在使用NDIlib_recv_capture_v2从视频源接收数据，那么当该函数返回NDIlib_frame_type_status_change时，您将收到KVM状态可能发生变化的通知。
 
+```c++
+bool NDIlib_recv_kvm_send_left_mouse_click(NDIlib_recv_instance_t p_instance);
+bool NDIlib_recv_kvm_send_middle_mouse_click(NDIlib_recv_instance_t p_instance);
+bool NDIlib_recv_kvm_send_right_mouse_click(NDIlib_recv_instance_t p_instance);
+```
 
+当你想发送一个鼠标下(即鼠标点击已经开始)消息到源，这个接收器连接了，然后你会调用这个函数。有一些单独的功能可以让您发送鼠标左键、鼠标中键和鼠标右键单击的消息。要模拟双击操作，您需要发送三条消息;前两个是鼠标点击消息，第三个是鼠标释放消息。重要的是，每个点击消息必须有至少一个鼠标释放消息，否则您所连接的操作系统将继续认为鼠标按钮永远被按下。
+
+```c++
+bool NDIlib_recv_kvm_send_left_mouse_release(NDIlib_recv_instance_t p_instance);
+bool NDIlib_recv_kvm_send_middle_mouse_release(NDIlib_recv_instance_t p_instance);
+bool NDIlib_recv_kvm_send_right_mouse_release(NDIlib_recv_instance_t p_instance);
+```
+
+当您希望向源发送鼠标释放消息时，您将调用这些函数中的一个。它们模拟鼠标消息的释放，并且总是在发送鼠标单击消息之后发送。
+
+```c++
+bool NDIlib_recv_kvm_send_vertical_mouse_wheel(NDIlib_recv_instance_t p_instance, const 
+float no_units);
+bool NDIlib_recv_kvm_send_horizontal_mouse_wheel(NDIlib_recv_instance_t p_instance, const 
+float no_units);
+
+```
+
+要模拟鼠标滚轮更新，您将调用此函数。你可以模拟一个垂直或水平的车轮更新，它们在大多数平台上是独立的控件。浮点单元表示您希望鼠标滚轮移动的“单元”的数量，1.0表示向下或向右移动单个单元。
+
+```c++
+bool NDIlib_recv_kvm_send_mouse_position(NDIlib_recv_instance_t p_instance, const float posn[2]);
+```
+
+要设置鼠标光标的位置，你可以调用这个函数。坐标在与分辨率无关的设置中指定，范围为0.0 - 1.0，用于连接的当前显示。屏幕的分辨率可以知道，如果你从那个设备接收视频源，这可能会在飞行中改变。位置(0,0)位于屏幕左上角。Posn[0]是鼠标光标的x坐标，Posn[1]是鼠标光标的y坐标。
+
+```c++
+bool NDIlib_recv_kvm_send_clipboard_contents(NDIlib_recv_instance_t p_instance, const char* 
+p_clipboard_contents);
+```
+
+为了将一个新的“剪贴板缓冲区”发送到目的地，我们需要调用这个函数，并传递一个以空结束的字符串，该字符串表示将放置在目的地机器缓冲区上的文本。
+
+```c++
+bool NDIlib_recv_kvm_send_touch_positions(NDIlib_recv_instance_t p_instance, const int no_posns, const float posns[]);
+```
+
+这个函数将向这个接收器连接的源发送一个触摸事件。在传输的阵列中可以有任意数量的同时接触点。no_posns的值表示当前使用了多少个触摸点，而posns[]数组是触摸位置的[x,y]浮点坐标的列表。这些位置的处理精度比许多系统上的屏幕分辨率更高，(0,0)表示屏幕的左上角，(1,1)表示屏幕的右下角。举个例子，如果有两个接触位置，那么posns[0]是第一个位置的x坐标，posns[1]是第一个位置的y坐标，posns[2]是第二个位置的x坐标，posns[3]是第二个位置的y坐标。
+
+```c++
+bool NDIlib_recv_kvm_send_keyboard_press(NDIlib_recv_instance_t p_instance, const int key_sym_value);
+```
+
+为了发送键盘按下事件，这个函数被调用。键盘消息使用标准的X-Windows Keysym值。为了方便您，NDI SDK中包含了用于这些的标准定义的副本，文件名为“Processing.NDI.KVM.keysymdef.h”。由于该文件包含许多#定义，所以当你简单地包含NDI SDK文件时，默认情况下它是不包含的，如果你希望它被包含，你可以\#define NDI_KVM_INCLUDE_KEYSYM 或简单地手动包含该文件到你的应用程序中。对于每个按键按下事件，发送一个键盘释放事件是很重要的，否则目的地会认为有一个“卡住的键”!关于keysym值的其他信息可以很容易地在网上找到，例如https://www.tcl.tk/man/tcl/TkCmd/keysyms.html
+
+```c++
+bool NDIlib_recv_kvm_send_keyboard_release(NDIlib_recv_instance_t p_instance, const int key_sym_value);
+```
 
 
 
