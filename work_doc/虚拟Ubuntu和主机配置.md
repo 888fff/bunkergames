@@ -199,10 +199,63 @@ ufw
 > ufw（Uncomplicated Firewall）[配置教程](https://blog.csdn.net/qq_24047235/article/details/110916314)
 >
 > 其中ufw的设置会阻挡NDI 5960~UP 端口流量的传出，设置时候需要注意。
+>
+> - 默认策略：ufw default allow outgoing
+>
+>   ​					ufw default deny incoming
+>
+> - 协议过滤语法： `ufw allow ssh`、`ufw deny http`、`ufw allow https`
+>
+> - 端口过滤语法：指定端口 `ufw allow 22`   指定端口范围（必须指定规则应适用的协议，tcp或udp ） `ufw [allow\deny] 22:100\tcp`
+>
+> - ip地址过滤语法：`ufw deny from 192.168.29.36` 禁止 192.168.29.36 访问 ；`ufw allow from 192.168.29.36 to any port 80 proto tcp` 允许 192.168.29.36 的 80 端口通过 tcp 协议访问
 
 unattended-upgrades
 
 > 系统的自动更新程序，目的是让普通用户的系统能随时保持最新，但对于开发来说实属麻烦。这个进程会在后台自动下载和安装系统更新文件，会阻止关机。
+
+如果Linux在虚拟机中执行，我们可以配置虚拟机的网络，让虚机系统和主机系统在同一个局域网内。
+
+首先，点击虚拟网络编辑器，如图配置，设置为其桥接模式，选择与主机相同的网卡设备。
+
+![image-20220818145637732](虚拟Ubuntu和主机配置_img/image-20220818145637732.png)
+
+接下来，确认当前主机网络的适配器，开启了相关的应用服务（VMware Bridge Protocol）
+
+![image-20220818145912591](虚拟Ubuntu和主机配置_img/image-20220818145912591.png)
+
+最后，在虚机启动时，进行下图设置：
+
+![image-20220818150110638](虚拟Ubuntu和主机配置_img/image-20220818150110638.png)
+
+这样，我们在启动虚机，进入Ubuntu后，则对网络进行相关配置即可。配置结束后，主机和虚机则可以相互ping通。
+
+## Qt在Linux下安装
+
+QT启动时候，会出现一个warning：Qt Warning: Ignoring XDG_SESSION_TYPE=wayland on Gnome. Use QT_QPA_PLATFORM=wayland to run on Wayland anyway.
+
+修改配置文件，删除掉#WaylandEnable前面的#
+
+sudo vi /etc/gdm3/custom.conf #WaylandEnable=false
+
+删除#，wq保存即可
+
+##### QT的快捷方式制作
+
+新建一个文本文件 sudo vi /usr/share/applications/QtCreator.desktop 
+
+[Desktop Entry]
+Encoding=UTF-8
+Name=QtCreator
+Comment=QtCreator
+Exec=这里是qt执行程序地址/qtcreator
+Icon=这里是icon图片地址/icon.png
+Terminal=false
+StartupNotify=true
+Type=Application
+Categories=Application;Development;
+
+wq保存后，即可在显示应用程序中看到。
 
 
 
