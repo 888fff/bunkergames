@@ -18,7 +18,7 @@
 
 |                | SRT   | WebRTC | NDI    | RTMP     |
 | -------------- | ----- | ------ | ------ | -------- |
-| 平均延迟       | <1sec | <1sec  | <1 sec | 0.8~3sec |
+| 平均延迟       | <1sec | <1sec  | <1 sec | 0.8~2sec |
 | 协议是否开源   | 是    | 是     | 否     | 是       |
 | API 可控性     | 多    | 多     | 少     | 一般     |
 | 抗网络抖动能力 | 强    | 强     | 一般   | 一般     |
@@ -78,16 +78,22 @@ SRS是Simple Realtime Streaming Server的缩写，名如其能，它的易用性
 
 SRS 作为一款开源的实时流媒体服务器，需要在git上进行下载（clone）获得项目代码并进行编译（make）后即可使用 [5]，而且启动SRS非常简单，仅需要在启动参数传入 `*.conf` 配置项文件即可。与此同时，SRS还提供有一个管理后端，可通过打开 http://localhost:8080/ 地址则可以看到后端的管理界面
 
-以启动WebRTC协议为例（其中192.168.3.10为服务器公网IP）：
+以启动推RTMP拉WebRTC协议为例（其中192.168.1.100为服务器公网IP）：
 
 ```shell
-env CANDIDATE="192.168.3.10" \
-./objs/srs -c conf/rtc.conf
+export CANDIDATE="192.168.1.100" \
+./objs/srs -c conf/rtmp2rtc.conf
 ```
 
+当服务器启动后，则可以通过FFmpeg 或者 OBS 推流到服务器，推流地址例如：rtmp://192.168.1.100/live/livestream ，然后各个终端则可以用 webrtc://192.168.1.100/live/livestream 或者 http://192.168.1.100:8080/live/livestream.flv 地址来进行拉流。
 
+##### GOP与低延时
+
+GOP [6] 的全称为（Group of Pictures）即图片组。GOP的第一个图像必须为I帧，这样就能保证GOP不需要参考其他图像，可以独立解码。我们通过设置两个I帧是时间距离， 也就是一个GOP长度，则可以减少视频流延迟。在设置RTMP协议的配置项时，通过禁用GOP-Cache，以此来降低延迟。但在RTC配置中，我们则不需要进行对GOP的配置，因为RTC没有固定的GOP。RTC为了保障流畅度，会动态的调整GOP，当然画质也会动态的变化。还有额外进行的低延迟直播配置，诸如Merged-Read/Write、Max Queue Length等大多在服务端进行。
 
 ### 直播测试
+
+
 
 ### 结论
 
@@ -98,4 +104,5 @@ env CANDIDATE="192.168.3.10" \
 2. Haivision，White Paper RTMP VS. SRT: Comparing Latency and Maximum Bandwidth
 2. 殷汶杰，FFMpeg 音视频开发基础与实战
 2. https://ossrs.net/lts/zh-cn/docs/v4/doc/getting-started-build
+2. https://www.veneratech.com/understanding-gop-what-is-group-of-pictures-and-why-is-it-important/
 
