@@ -362,6 +362,12 @@ Bruce Gooch, Peter- pike Sloan, Amy Gooch, Peter Shirley, Richard Riesenfeld [Go
 
 ##### 7.2.4 Calculating Silhouettes for Implicit Surface
 
+David Bremer 和 John Hughes [Bremer, Hughes 98]探索了一种类似于Markosian [Markosian, et al. 97] 的方法，用于寻找隐式曲面的轮廓。他们的算法首先通过射线与曲面的交点在表面上定位一个点，从而找到近似的轮廓。然后沿着表面描到轮廓上的一点，然后描出轮廓，如图7.17所示
+
+<img src="img/NPR笔记/image-20220915151503669.png" alt="image-20220915151503669" style="zoom:80%;" />
+
+Bremer和Hughes的算法假设曲面模型 S 是 $R^3$上的二次连续可微函数 f 的零集。他们的算法将隐式函数视为一个“黑箱”，从中他们可以计算函数值、梯度和Hessian(二阶导数矩阵)在任意点的值。他们还使用视角方向为 v 的正交相机，并假设曲面适合相机的图像平面。给定p，坐标为p1,p2,p3，他们进一步假设存在一个常数K > 0，这样在每一点p处，f 的梯度由
+
 ##### 7.2.5 Calculating Silhouettes for NURBS Surfaces 
 
 ### 7.3 Summary
