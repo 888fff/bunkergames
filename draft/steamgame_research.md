@@ -2,7 +2,7 @@
 
 ### 商店主页：类别
 
-![image-20230708153248867](C:\GitProjects\bunkergames\draft\images\steamgame_research\image-20230708153248867.png)
+![image-20230708153248867](.\images\steamgame_research\image-20230708153248867.png)
 
 个人感觉，类别首先推给人的标签，应该是一个主要方向（热点方向）。
 
@@ -10,9 +10,9 @@
 
 游戏会根据国家不同而略微不同，可能是小幅推广的原因
 
-![image-20230708154445508](C:\GitProjects\bunkergames\draft\images\steamgame_research\image-20230708154445508.png)
+![image-20230708154445508](.\images\steamgame_research\image-20230708154445508.png)
 
-![image-20230708154504327](C:\GitProjects\bunkergames\draft\images\steamgame_research\image-20230708154504327.png)
+![image-20230708154504327](.\images\steamgame_research\image-20230708154504327.png)
 
 就这几个热门游戏进行初步调研
 
