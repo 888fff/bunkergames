@@ -32,7 +32,7 @@ notepad .condarc
 
 然后打开下面的镜像网站，找到这个位置，复制全部，然后粘贴到刚刚打开的”.condarc“文本内，点保存：
 
-![image-20231226101150429](K:\bunkergames\work_doc\img\部署Qwen\image-20231226101150429.png)
+<img src="K:\bunkergames\work_doc\img\部署Qwen\image-20231226101150429.png" alt="image-20231226101150429" style="zoom: 150%;" />
 
 输入以下命令，把他原来的配置清除掉，确保我们的配置搞上去！
 
@@ -69,6 +69,8 @@ nvidia-smi # 查看当前 GPU 支持的最高 CUDA 版本
 
 ```
 conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
+OR
+conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
 ```
 
 安装完成后，可以通过如下口令验证安装是否成功：
